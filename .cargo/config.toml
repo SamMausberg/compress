@@ -1,0 +1,19 @@
+# Cargo configuration for the `compress` workspace.
+#
+# Kept intentionally small. The goal is reproducibility and a few
+# soundness-relevant warnings, not a maze of toggles.
+
+[net]
+# More reliable than libgit2 behind corporate proxies; matches what CI uses.
+git-fetch-with-cli = true
+
+[registries.crates-io]
+# Sparse registry is the default since 1.84, but pin it explicitly so a
+# misconfigured environment doesn't silently fall back to the git index.
+protocol = "sparse"
+
+[build]
+# `unreachable_pub`: surfaces items declared `pub` that are not actually
+# reachable from the crate root. Catches private→public visibility drift,
+# which matters in a workspace where every cross-crate boundary is an API.
+rustflags = ["-W", "unreachable_pub"]

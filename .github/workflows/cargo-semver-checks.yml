@@ -1,0 +1,32 @@
+name: cargo-semver-checks
+
+# Semver guard for `vpm-core` (and any other public crate). Until the
+# project ships a 0.1.0 there is no published baseline to diff against,
+# so this workflow runs only on manual dispatch and on releases.
+# Once a baseline exists, switch the trigger to `pull_request`.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Crate to check"
+        required: true
+        default: "vpm-core"
+
+concurrency:
+  group: semver-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: cargo-semver-checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          package: ${{ github.event.inputs.package || 'vpm-core' }}

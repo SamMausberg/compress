@@ -1,0 +1,37 @@
+name: zizmor (workflow security)
+
+# Static analysis for GitHub Actions workflows. Catches things actionlint
+# doesn't: secret leaks via `pull_request_target`, untrusted-input expansion
+# in `run:`, third-party-action pinning hygiene.
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: zizmor-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write   # so SARIF upload can populate the Security tab
+
+jobs:
+  zizmor:
+    name: zizmor
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@v0
+        with:
+          # Surface persona-aware findings; `auditor` is the strictest.
+          persona: auditor

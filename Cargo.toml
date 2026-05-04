@@ -9,11 +9,14 @@ members = [
   "crates/vpm-verify",
   "crates/vpm-py",
 ]
+# `fuzz/` is a standalone cargo-fuzz workspace; libfuzzer linker flags
+# would bleed into normal builds if it were a member.
+exclude = ["fuzz"]
 
 [workspace.package]
 version = "0.0.0"
 edition = "2021"
-rust-version = "1.85"
+rust-version = "1.86"
 license = "Apache-2.0"
 repository = "https://github.com/SamMausberg/compress"
 authors = ["Sam Mausberg <samuelmausberg@gmail.com>"]
@@ -33,9 +36,10 @@ egg = "0.11"
 pyo3 = { version = "0.28.3", features = ["extension-module", "abi3-py314"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-# bincode 3.0.0 is a placeholder (compile_error!); 2.0.x is the current
-# usable line. Migrate to the next real major when it ships.
-bincode = "2.0"
+# bincode 2.x was flagged unmaintained (RUSTSEC-2025-0141) and 3.0 ships a
+# `compile_error!` poison pill. We use postcard — same niche (serde-
+# compatible binary format), actively maintained, no_std-friendly.
+postcard = { version = "1", features = ["alloc"] }
 parking_lot = "0.12"
 dashmap = "6.1"
 smallvec = { version = "1", features = ["serde", "union"] }

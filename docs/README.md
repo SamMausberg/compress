@@ -8,7 +8,7 @@ implementation of **VPM-5.3: Verifier-Native Compressive Predictive Mechanisms**
 - [`architecture/`](./architecture/) — the architecture specification, translated
   verbatim from `vpm_architecture_v5_3_improved.pdf` at repo root. One markdown
   file per section / appendix; equations are preserved as LaTeX rendered with
-  KaTeX/MathJax.
+  MathJax (see `mkdocs.yml`).
 - [`glossary.md`](./glossary.md) — symbols, types, abbreviations.
 - [`references.md`](./references.md) — the 14 papers cited in the architecture.
 - [`implementation/`](./implementation/) — implementation roadmap (VPM-0 minimal

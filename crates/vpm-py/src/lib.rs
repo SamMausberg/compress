@@ -8,12 +8,12 @@
 //!
 //! Module map (Python ↔ Rust):
 //!
-//! - `vpm._native.contract` ↔ [`vpm_core::contract`]
-//! - `vpm._native.ledger`   ↔ [`vpm_ledger`]
-//! - `vpm._native.dsl`      ↔ [`vpm_dsl`]
-//! - `vpm._native.egraph`   ↔ [`vpm_egraph`]
-//! - `vpm._native.authority`↔ [`vpm_authority`]
-//! - `vpm._native.verify`   ↔ [`vpm_verify`]
+//! - `vpm._native.contract` ↔ `vpm_core::contract`
+//! - `vpm._native.ledger`   ↔ `vpm_ledger`
+//! - `vpm._native.dsl`      ↔ `vpm_dsl`
+//! - `vpm._native.egraph`   ↔ `vpm_egraph`
+//! - `vpm._native.authority`↔ `vpm_authority`
+//! - `vpm._native.verify`   ↔ `vpm_verify`
 //!
 //! The exposed API is intentionally **narrow**: only the public boundary
 //! types (`Contract`, `Ledger`, `TraceDag`, `EClass`, `AuthLabel`,

@@ -6,7 +6,7 @@
 //! - Verifier record `v = (X_v, c_v, n_v, f_v, ρ_v, ψ_v, κ_v, train_v,
 //!   cal_v, audit_v, gen_v)` (eq. 21).
 //! - Anytime sequence-valid false-pass UCB `p_{v,r}^+(T)` with
-//!   adaptive-stopping correction (eqs. 22–23; refs [12][13] of
+//!   adaptive-stopping correction (eqs. 22–23; refs \[12\]\[13\] of
 //!   `docs/references.md`).
 //! - Effective verifier weight `η_{v,r}` with split / audit / generator
 //!   / dependence factors (eq. 24).

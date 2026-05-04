@@ -1,0 +1,43 @@
+name: GPU tests
+
+# Manual-dispatch only. CI does not have a GPU; this workflow exists so
+# the wiring for `pytest -m gpu` is validated and ready when a GPU
+# self-hosted runner is added. To enable, register a runner with the
+# label `gpu` and remove the `if:` guard on the job.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pytest_args:
+        description: "Extra args to pass to pytest"
+        required: false
+        default: "-v"
+
+concurrency:
+  group: gpu-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  gpu:
+    name: pytest -m gpu
+    # Switch to `[self-hosted, gpu]` when a runner is registered.
+    runs-on: ubuntu-24.04
+    if: ${{ vars.GPU_RUNNER_AVAILABLE == 'true' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+      - run: uv python install 3.14
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Sync (with viz extra for plot artefacts)
+        run: uv sync --locked --group dev --extra viz
+      - name: nvidia-smi
+        run: nvidia-smi
+      - name: pytest -m gpu
+        run: uv run pytest -m gpu ${{ inputs.pytest_args }}

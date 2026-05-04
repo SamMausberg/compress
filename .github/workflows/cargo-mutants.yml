@@ -1,0 +1,60 @@
+name: cargo-mutants
+
+# Mutation testing for the verifier kernel and authority lattice.
+# Mutation testing is *the* discipline for proving certificate logic
+# isn't vacuous, and these two crates are where that matters most.
+#
+# Long-running. Manual-dispatch on a per-crate basis + monthly cron.
+
+on:
+  schedule:
+    - cron: "0 4 1 * *"   # First of the month, 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      crate:
+        description: "Crate to mutate"
+        required: true
+        default: "vpm-verify"
+        type: choice
+        options:
+          - vpm-verify
+          - vpm-authority
+          - vpm-egraph
+          - vpm-ledger
+
+concurrency:
+  group: mutants-${{ github.event.inputs.crate || 'monthly' }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  mutants:
+    name: cargo-mutants on ${{ github.event.inputs.crate || 'vpm-verify' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants,nextest
+      - name: Run cargo-mutants
+        run: |
+          CRATE="${{ github.event.inputs.crate || 'vpm-verify' }}"
+          cargo mutants \
+            --workspace \
+            --package "$CRATE" \
+            --test-tool nextest \
+            --jobs 2 \
+            --timeout-multiplier 2.0 \
+            --output target/mutants
+      - name: Upload mutants report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutants-${{ github.event.inputs.crate || 'monthly' }}
+          path: target/mutants
+          retention-days: 60

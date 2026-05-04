@@ -80,4 +80,6 @@ nav:
       - "Appendix B — Executable sanity conditions": architecture/B-sanity-conditions.md
   - Glossary: glossary.md
   - References: references.md
-  - Implementation: implementation/README.md
+  - Implementation:
+      - Roadmap: implementation/README.md
+      - "egg → egglog migration": implementation/egglog-migration.md

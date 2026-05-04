@@ -1,0 +1,76 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  rust:
+    name: Rust (cargo-llvm-cov)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov,nextest
+      - name: Generate coverage (lcov + html)
+        run: |
+          cargo llvm-cov --workspace --all-targets --locked --lcov \
+            --output-path coverage-rust.lcov
+          cargo llvm-cov report --html --output-dir target/llvm-cov-html
+      - name: Upload Rust coverage HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-coverage-html
+          path: target/llvm-cov-html
+          retention-days: 14
+      - name: Upload Rust coverage (lcov)
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-coverage-lcov
+          path: coverage-rust.lcov
+          retention-days: 14
+
+  python:
+    name: Python (pytest-cov)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+      - run: uv python install 3.14
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Sync project (builds the maturin extension)
+        run: uv sync --locked --group dev
+      - name: pytest with coverage
+        run: |
+          uv run pytest -q --cov=vpm --cov-report=xml --cov-report=html
+      - name: Upload Python coverage HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage-html
+          path: htmlcov
+          retention-days: 14
+      - name: Upload Python coverage (xml)
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage-xml
+          path: coverage.xml
+          retention-days: 14

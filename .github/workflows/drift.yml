@@ -1,0 +1,56 @@
+name: Dependency drift
+
+# Weekly heads-up for transitive drift Dependabot doesn't see.
+# Both jobs are non-blocking: they file an issue rather than failing CI.
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"   # Mondays 07:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: drift
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  cargo:
+    name: Cargo transitive drift
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo update --dry-run
+        run: |
+          set -o pipefail
+          cargo update --dry-run --workspace 2>&1 | tee cargo-drift.txt
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-drift
+          path: cargo-drift.txt
+          retention-days: 30
+
+  uv:
+    name: uv transitive drift
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+      - run: uv python install 3.14
+      - name: uv lock --check (snapshot)
+        run: uv lock --check 2>&1 | tee uv-drift.txt || true
+      - name: uv lock --upgrade --dry-run
+        run: uv lock --upgrade --dry-run 2>&1 | tee -a uv-drift.txt || true
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: uv-drift
+          path: uv-drift.txt
+          retention-days: 30

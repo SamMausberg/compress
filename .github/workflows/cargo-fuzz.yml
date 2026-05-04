@@ -1,0 +1,77 @@
+name: cargo-fuzz
+
+# Manual-dispatch fuzzing. Pick a target, set a duration, run.
+# Real fuzzing runs are long; CI is for smoke-checking that targets
+# still build, plus on-demand longer runs invoked by the maintainer.
+
+on:
+  schedule:
+    # Weekly 30-minute smoke run on each target.
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Fuzz target name"
+        required: true
+        default: "dsl_parse"
+        type: choice
+        options:
+          - dsl_parse
+          - verify_e_value
+      runs:
+        description: "Number of runs (-runs= flag); 0 means run for `max_total_time`"
+        required: false
+        default: "0"
+      max_total_time:
+        description: "Max wall-clock seconds (-max_total_time=)"
+        required: false
+        default: "300"
+
+concurrency:
+  group: fuzz-${{ github.event.inputs.target || 'smoke' }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fuzz:
+    name: cargo fuzz run ${{ github.event.inputs.target || 'smoke' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "fuzz -> target"
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-fuzz
+      - name: Smoke-build all targets
+        run: cargo fuzz build --fuzz-dir fuzz
+      - name: Run target (manual dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          cargo fuzz run \
+            --fuzz-dir fuzz \
+            "${{ inputs.target }}" \
+            -- \
+            -runs=${{ inputs.runs }} \
+            -max_total_time=${{ inputs.max_total_time }}
+      - name: Run targets briefly (scheduled smoke)
+        if: github.event_name == 'schedule'
+        run: |
+          for t in dsl_parse verify_e_value; do
+            cargo fuzz run --fuzz-dir fuzz "$t" -- -max_total_time=300 -runs=0 || true
+          done
+      - name: Upload artefacts (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts-${{ github.event.inputs.target || 'smoke' }}
+          path: |
+            fuzz/artifacts
+            fuzz/corpus
+          retention-days: 14
+          if-no-files-found: ignore

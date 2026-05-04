@@ -141,6 +141,12 @@ certified utility positive; all Criterion 1 failure clauses unfired.
   for Python; budgets in `vpm.training.budget` use these as ground
   truth for cost terms.
 
+## Architectural decisions
+
+- [`egglog-migration.md`](./egglog-migration.md) — when, and only when,
+  the e-graph backend should move from `egg` to `egglog`. **Decision
+  (May 2026): stay on `egg`.**
+
 ## Out of scope (for now)
 
 - Distributed training.

@@ -1,0 +1,72 @@
+name: Docs PDF
+
+# Build a PDF render of the architecture docs as a release artefact.
+# The architecture *is* the paper; CI publishes a downloadable copy from
+# every tagged release plus a rolling artefact on main.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs-pdf.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: docs-pdf-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write   # for release upload
+
+jobs:
+  pandoc:
+    name: pandoc → PDF
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install pandoc + LaTeX (xelatex)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pandoc texlive-xetex texlive-fonts-recommended \
+            texlive-latex-recommended texlive-latex-extra
+      - name: Render architecture docs to PDF
+        run: |
+          mkdir -p dist
+          # Order matches mkdocs.yml nav.
+          pandoc \
+            --pdf-engine=xelatex \
+            --toc --toc-depth=2 \
+            --metadata title="VPM-5.3 Architecture (built docs)" \
+            --metadata author="Sam Mausberg" \
+            --metadata date="$(date -u +%Y-%m-%d)" \
+            -o dist/vpm-5.3-architecture.pdf \
+            docs/architecture/00-abstract.md \
+            docs/architecture/01-contract-ledger-invariants.md \
+            docs/architecture/02-typed-mechanisms-evidence.md \
+            docs/architecture/03-neural-substrate.md \
+            docs/architecture/04-natural-language.md \
+            docs/architecture/05-compiler-posterior.md \
+            docs/architecture/06-verification-authority.md \
+            docs/architecture/07-compression-memory.md \
+            docs/architecture/08-training-system.md \
+            docs/architecture/09-evaluation-failure.md \
+            docs/architecture/A-inference-procedure.md \
+            docs/architecture/B-sanity-conditions.md \
+            docs/glossary.md \
+            docs/references.md
+      - name: Upload PDF artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vpm-architecture-pdf
+          path: dist/vpm-5.3-architecture.pdf
+          retention-days: 90
+      - name: Attach PDF to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/vpm-5.3-architecture.pdf

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=1.8,<2.0"]
+requires = ["maturin>=1.13,<2.0"]
 build-backend = "maturin"
 
 [project]
@@ -31,20 +31,22 @@ classifiers = [
 ]
 
 dependencies = [
+  # TODO(security): CVE-2026-24747 — torch unpickler RCE. Once a patched
+  # 2.11.z is published, raise this floor to that version (e.g. >=2.11.2).
   "torch>=2.11",
-  "numpy>=2.1",
-  "scipy>=1.14",
+  "numpy>=2.4",
+  "scipy>=1.17",
   "einops>=0.8",
-  "pydantic>=2.10",
-  "rich>=14.0",
-  "typer>=0.15",
-  "networkx>=3.5",
+  "pydantic>=2.13",
+  "rich>=15.0",
+  "typer>=0.25",
+  "networkx>=3.6",
 ]
 
 [project.optional-dependencies]
-ssm = ["mamba-ssm>=2.2"]
-viz = ["matplotlib>=3.9", "plotly>=5.24"]
-retrieve = ["faiss-cpu>=1.9", "sentence-transformers>=3.3"]
+ssm = ["mamba-ssm>=2.3"]
+viz = ["matplotlib>=3.10", "plotly>=6.7"]
+retrieve = ["faiss-cpu>=1.13", "sentence-transformers>=5.4"]
 all = [
   "vpm[ssm]",
   "vpm[viz]",
@@ -78,20 +80,21 @@ package = true
 
 [dependency-groups]
 dev = [
-  "ruff>=0.13",
+  "ruff>=0.15",
   "pyright>=1.1.405",
-  "pytest>=8.4",
+  "pytest>=9.0",
   "pytest-cov>=7.0",
   "pytest-benchmark>=5.2",
   "hypothesis>=6.140",
-  "pre-commit>=4.3",
-  "maturin>=1.8",
-  "typos>=1.36",
+  "pre-commit>=4.6",
+  "maturin>=1.13",
+  "typos>=1.46",
   "pip-audit>=2.9",
+  "deptry>=0.20",
 ]
 docs = [
-  "mkdocs-material>=9.6",
-  "mkdocstrings[python]>=0.30",
+  "mkdocs-material>=9.7",
+  "mkdocstrings[python]>=1.0",
 ]
 
 # ---------------------------------------------------------------------------
@@ -129,6 +132,7 @@ select = [
   "TRY",                   # tryceratops
   "PERF",                  # perflint
   "FURB",                  # refurb
+  "S",                     # flake8-bandit (security; verifier-native code earns the noise)
 ]
 ignore = [
   "E501",                  # line length (formatter handles it)
@@ -136,11 +140,12 @@ ignore = [
   "PLR0911",               # too many returns — same
   "PLR2004",               # magic numbers — same
   "TRY003",                # long exception messages
+  "S101",                  # `assert` is fine in non-test code that isn't safety-critical
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PLR", "ARG", "S101"]
-"examples/**" = ["PLR", "ARG"]
+"tests/**" = ["PLR", "ARG", "S101", "S105", "S106", "S311"]
+"examples/**" = ["PLR", "ARG", "S"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -165,7 +170,7 @@ useLibraryCodeForTypes = true
 # Pytest.
 # ---------------------------------------------------------------------------
 [tool.pytest.ini_options]
-minversion = "8.3"
+minversion = "9.0"
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 addopts = [
@@ -178,6 +183,8 @@ markers = [
   "slow: marks tests as slow",
   "gpu: requires a CUDA device",
   "integration: end-to-end tests",
+  "sanity: behavior-level invariants from Appendix B (executable sanity conditions)",
+  "failure_modes: regression tests for Criterion 1 (§9) failure clauses",
 ]
 filterwarnings = [
   "default",
@@ -206,7 +213,9 @@ skip_covered = false
 # Typos.
 # ---------------------------------------------------------------------------
 [tool.typos.default]
-extend-words = { "VPM" = "VPM", "VNS" = "VNS" }
+# `breal`, `bsem`, `bctx` are LaTeX subscripts for `b_real`, `b_sem`,
+# `b_ctx` from §8 (eq. 148). They look like typos but they are math.
+extend-words = { "VPM" = "VPM", "VNS" = "VNS", "breal" = "breal", "bsem" = "bsem", "bctx" = "bctx" }
 
 [tool.typos.files]
 extend-exclude = [
@@ -216,3 +225,23 @@ extend-exclude = [
   "site/**",
   "target/**",
 ]
+
+# ---------------------------------------------------------------------------
+# Deptry: flag missing, unused, transitive, and misplaced Python deps.
+# ---------------------------------------------------------------------------
+[tool.deptry]
+extend_exclude = ["site", "target", ".venv", "tests", "examples", "scripts"]
+known_first_party = ["vpm"]
+# DEP002 (unused dep) is suppressed while `python/vpm/` is mostly
+# placeholder packages; flip it back on once the M0 modules import the
+# core runtime deps. Until then, pip-audit + cargo-deny carry the
+# unused-package signal indirectly.
+ignore = ["DEP002"]
+# Map distribution-name → import-name for packages whose import path
+# isn't trivially derivable from the dist name. Silences deptry's
+# "Assuming the corresponding module name…" warnings.
+package_module_name_map = {"mamba-ssm" = "mamba_ssm", "faiss-cpu" = "faiss", "sentence-transformers" = "sentence_transformers", "mkdocs-material" = "material", "mkdocstrings" = "mkdocstrings"}
+
+[tool.deptry.per_rule_ignores]
+# `vpm._native` is the maturin-built extension; deptry can't see it.
+DEP001 = ["vpm._native"]

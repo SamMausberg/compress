@@ -1,6 +1,6 @@
 //! `vpm-egraph`: e-graph / equality saturation for VPM-5.3.
 //!
-//! Wraps the `egg` crate (Willsey et al., POPL 2021 — reference [6] of
+//! Wraps the `egg` crate (Willsey et al., POPL 2021 — reference \[6\] of
 //! `docs/references.md`) and adapts it to:
 //!
 //! - **Posterior-valued canonicalization** with reversible witness or a

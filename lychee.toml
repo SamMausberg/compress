@@ -1,0 +1,32 @@
+# Lychee link checker configuration.
+# https://lychee.cli.rs/usage/config/
+
+# Be a polite client to academic publishers and arXiv.
+max_concurrency = 4
+max_retries = 2
+retry_wait_time = 4
+
+# Surface 4xx/5xx as failures, but treat 429s as transient.
+accept = ["200..=299", "429"]
+
+# Keep rate-limited servers happy.
+timeout = 20
+
+# Skip the obvious noise.
+exclude = [
+    # Local file references that lychee can resolve fine but adds traffic.
+    "^file://",
+    # GitHub edit-link template surfaced by mkdocs-material.
+    "https?://github\\.com/.+/edit/.+",
+]
+exclude_path = [
+    "site",
+    "target",
+    ".venv",
+    "vpm_architecture_v5_3_improved.pdf",
+]
+
+# Mention DOIs and arXiv explicitly so they aren't classed as "unknown".
+include = []
+
+verbose = "info"

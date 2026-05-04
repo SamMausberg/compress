@@ -1,0 +1,39 @@
+# Standalone cargo-fuzz workspace. Intentionally NOT a member of the
+# top-level Cargo workspace — cargo-fuzz uses libfuzzer-sys with
+# project-specific linker flags that should not bleed into normal builds.
+#
+# The targets are placeholder shells today; they exercise the public
+# entry points of `vpm-dsl` and `vpm-verify` once those exist. Until
+# then they compile and no-op so the CI wiring stays exercised.
+
+[package]
+name = "vpm-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+# Intentionally not depending on the workspace crates yet — the public
+# APIs being fuzzed don't exist. Add path deps as targets become real.
+
+[[bin]]
+name = "dsl_parse"
+path = "fuzz_targets/dsl_parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "verify_e_value"
+path = "fuzz_targets/verify_e_value.rs"
+test = false
+doc = false
+bench = false
+
+[profile.release]
+debug = 1

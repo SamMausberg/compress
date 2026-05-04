@@ -1,0 +1,76 @@
+# cargo-deny configuration. Strict superset of cargo-audit:
+# - advisories: RustSec advisory DB.
+# - licenses: SPDX allow-list.
+# - bans: explicit deny / require-single-version rules.
+# - sources: only crates.io and the project's own git remotes.
+#
+# Run locally: `cargo deny check`.
+#
+# Rationale notes are kept short — the architecture spec is the source of
+# truth, this file just enforces hygiene.
+
+[graph]
+all-features = true
+
+# ---------------------------------------------------------------------------
+# Advisories — RustSec.
+# ---------------------------------------------------------------------------
+[advisories]
+version = 2
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+yanked = "deny"
+ignore = []
+
+# ---------------------------------------------------------------------------
+# Licenses — Apache-2.0 / MIT / BSD family + a few permissive variants.
+# Keep this list explicit. The project is Apache-2.0; copyleft (GPL/AGPL)
+# would force a re-license, so deny by default.
+# ---------------------------------------------------------------------------
+[licenses]
+version = 2
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "MIT",
+    "MIT-0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "CC0-1.0",
+    "Zlib",
+    "Unlicense",
+    "MPL-2.0",
+    "OpenSSL",
+]
+confidence-threshold = 0.8
+
+[[licenses.clarify]]
+crate = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
+
+# ---------------------------------------------------------------------------
+# Bans — version policy.
+# ---------------------------------------------------------------------------
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "all"
+deny = [
+    # `bincode` 2.x is unmaintained (RUSTSEC-2025-0141); we use postcard.
+    { crate = "bincode", reason = "unmaintained; use postcard" },
+]
+skip = []
+skip-tree = []
+
+# ---------------------------------------------------------------------------
+# Sources — only allow crates.io and our own git remotes.
+# ---------------------------------------------------------------------------
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
