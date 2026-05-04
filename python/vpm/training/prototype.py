@@ -1,0 +1,310 @@
+"""End-to-end train/evaluate loop for the C0 trainable prototype."""
+
+from __future__ import annotations
+
+from collections import Counter
+from dataclasses import dataclass
+from pathlib import Path
+
+import torch
+from torch import nn
+
+from vpm.infer import InferenceResult, run_task_candidate
+from vpm.memory import MemoryLibrary
+from vpm.substrate.prototype import (
+    OPERATIONS,
+    ArithmeticProposalNet,
+    OperationProposal,
+    batch_tensors,
+    load_prototype,
+    predict_operation,
+    resolve_device,
+    save_prototype,
+)
+from vpm.tasks.c0 import C0Task, arithmetic_task
+from vpm.verifiers import gate_passed
+
+
+@dataclass(frozen=True)
+class TrainingConfig:
+    """Local training configuration for the trainable C0 prototype."""
+
+    limit: int = 8
+    epochs: int = 80
+    hidden_dim: int = 32
+    learning_rate: float = 0.03
+    seed: int = 7
+    device: str = "auto"
+    artifact: Path | None = None
+
+
+@dataclass(frozen=True)
+class BaselineMetrics:
+    """Matched baseline result."""
+
+    name: str
+    solve_rate: float
+    operation_accuracy: float
+    mean_candidates: float
+
+    def to_dict(self) -> dict[str, float | str]:
+        """JSON-friendly baseline metrics."""
+        return {
+            "name": self.name,
+            "solve_rate": self.solve_rate,
+            "operation_accuracy": self.operation_accuracy,
+            "mean_candidates": self.mean_candidates,
+        }
+
+
+@dataclass(frozen=True)
+class PrototypeEvalReport:
+    """Held-out report for learned proposals and verifier-gated outcomes."""
+
+    tasks: int
+    certified: int
+    rejected: int
+    operation_accuracy: float
+    mean_confidence: float
+    macro_memory_active: int
+    compression_ratio: float
+    baselines: tuple[BaselineMetrics, ...]
+
+    @property
+    def solve_rate(self) -> float:
+        """Verifier-certified solve rate."""
+        return self.certified / self.tasks if self.tasks else 0.0
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-friendly evaluation report."""
+        return {
+            "tasks": self.tasks,
+            "certified": self.certified,
+            "rejected": self.rejected,
+            "solve_rate": self.solve_rate,
+            "operation_accuracy": self.operation_accuracy,
+            "mean_confidence": self.mean_confidence,
+            "macro_memory_active": self.macro_memory_active,
+            "compression_ratio": self.compression_ratio,
+            "baselines": [baseline.to_dict() for baseline in self.baselines],
+        }
+
+
+@dataclass(frozen=True)
+class TrainingReport:
+    """Training result plus held-out verifier/evaluation evidence."""
+
+    epochs: int
+    device: str
+    train_tasks: int
+    heldout_tasks: int
+    initial_loss: float
+    final_loss: float
+    initial_accuracy: float
+    final_accuracy: float
+    heldout: PrototypeEvalReport
+    artifact: str | None
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-friendly training report."""
+        return {
+            "epochs": self.epochs,
+            "device": self.device,
+            "train_tasks": self.train_tasks,
+            "heldout_tasks": self.heldout_tasks,
+            "initial_loss": self.initial_loss,
+            "final_loss": self.final_loss,
+            "initial_accuracy": self.initial_accuracy,
+            "final_accuracy": self.final_accuracy,
+            "heldout": self.heldout.to_dict(),
+            "artifact": self.artifact,
+        }
+
+
+@dataclass(frozen=True)
+class PrototypeInference:
+    """One learned proposal routed through the verifier-native inference loop."""
+
+    proposal: OperationProposal
+    result: InferenceResult
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-friendly inference payload."""
+        return {"proposal": self.proposal.to_dict(), "result": self.result.to_dict()}
+
+
+def train_c0_prototype(
+    config: TrainingConfig | None = None,
+) -> tuple[ArithmeticProposalNet, TrainingReport]:
+    """Train a recurrent substrate proposal model on C0 curriculum tasks."""
+    cfg = config or TrainingConfig()
+    torch.manual_seed(cfg.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(cfg.seed)
+    device = resolve_device(cfg.device)
+    train_tasks, heldout_tasks = curriculum_split(cfg.limit)
+    model = ArithmeticProposalNet(cfg.hidden_dim, scale=cfg.limit).to(device)
+    events, labels = batch_tensors(train_tasks, model.scale, device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.learning_rate)
+    loss_fn = nn.CrossEntropyLoss()
+
+    initial_loss = float(loss_fn(model(events), labels).item())
+    initial_accuracy = operation_accuracy(model, train_tasks, device)
+    final_loss = initial_loss
+    for _ in range(cfg.epochs):
+        model.train()
+        optimizer.zero_grad()
+        loss = loss_fn(model(events), labels)
+        loss.backward()
+        optimizer.step()
+        final_loss = float(loss.item())
+
+    final_accuracy = operation_accuracy(model, train_tasks, device)
+    artifact = str(save_prototype(model, cfg.artifact)) if cfg.artifact else None
+    heldout = evaluate_prototype(model, train_tasks, heldout_tasks, device)
+    return model, TrainingReport(
+        epochs=cfg.epochs,
+        device=str(device),
+        train_tasks=len(train_tasks),
+        heldout_tasks=len(heldout_tasks),
+        initial_loss=initial_loss,
+        final_loss=final_loss,
+        initial_accuracy=initial_accuracy,
+        final_accuracy=final_accuracy,
+        heldout=heldout,
+        artifact=artifact,
+    )
+
+
+def evaluate_saved_prototype(
+    path: Path, limit: int = 8, device: str = "auto"
+) -> PrototypeEvalReport:
+    """Load and evaluate a saved prototype artifact."""
+    model = load_prototype(path, device)
+    train_tasks, heldout_tasks = curriculum_split(limit)
+    return evaluate_prototype(model, train_tasks, heldout_tasks, resolve_device(device))
+
+
+def run_learned_task(model: ArithmeticProposalNet, task: C0Task) -> PrototypeInference:
+    """Run one task using the learned operation proposal."""
+    proposal = predict_operation(model, task)
+    return PrototypeInference(proposal, run_task_candidate(task, proposal.operation))
+
+
+def evaluate_prototype(
+    model: ArithmeticProposalNet,
+    train_tasks: list[C0Task],
+    heldout_tasks: list[C0Task],
+    device: torch.device,
+) -> PrototypeEvalReport:
+    """Evaluate learned proposals against verifier-gated held-out tasks."""
+    macro_memory = MemoryLibrary()
+    certified = 0
+    correct_ops = 0
+    confidence_sum = 0.0
+    for task in heldout_tasks:
+        proposal = predict_operation(model, task, device)
+        result = run_task_candidate(task, proposal.operation)
+        passed = gate_passed(result.native_report)
+        certified += int(passed)
+        correct_ops += int(proposal.operation == task.operation)
+        confidence_sum += proposal.confidence
+        if passed:
+            macro_memory.admit(
+                f"macro:{proposal.operation}", proposal.operation, result.native_report
+            )
+
+    tasks = len(heldout_tasks)
+    baselines = (
+        fixed_budget_baseline("majority", majority_operation(train_tasks), heldout_tasks),
+        fixed_budget_baseline("add-only", "add", heldout_tasks),
+        enumerative_baseline(heldout_tasks),
+    )
+    macro_active = len(macro_memory.active)
+    compression = certified / macro_active if macro_active else 0.0
+    return PrototypeEvalReport(
+        tasks=tasks,
+        certified=certified,
+        rejected=tasks - certified,
+        operation_accuracy=correct_ops / tasks if tasks else 0.0,
+        mean_confidence=confidence_sum / tasks if tasks else 0.0,
+        macro_memory_active=macro_active,
+        compression_ratio=compression,
+        baselines=baselines,
+    )
+
+
+def operation_accuracy(
+    model: ArithmeticProposalNet,
+    tasks: list[C0Task],
+    device: torch.device,
+) -> float:
+    """Return operation prediction accuracy."""
+    if not tasks:
+        return 0.0
+    return sum(
+        predict_operation(model, task, device).operation == task.operation for task in tasks
+    ) / len(tasks)
+
+
+def curriculum_split(limit: int) -> tuple[list[C0Task], list[C0Task]]:
+    """Build deterministic train/held-out C0 arithmetic splits."""
+    tasks = [
+        arithmetic_task(operation, left, right)
+        for operation in OPERATIONS
+        for left in range(-limit, limit + 1)
+        for right in range(-limit, limit + 1)
+    ]
+    train: list[C0Task] = []
+    heldout: list[C0Task] = []
+    for task in tasks:
+        split_key = task.left * 31 + task.right * 17 + (13 if task.operation == "mul" else 0)
+        (heldout if split_key % 5 == 0 else train).append(task)
+    return train, heldout
+
+
+def majority_operation(tasks: list[C0Task]) -> str:
+    """Most frequent operation in a training split."""
+    counts = Counter(task.operation for task in tasks)
+    return counts.most_common(1)[0][0] if counts else "add"
+
+
+def fixed_budget_baseline(name: str, operation: str, tasks: list[C0Task]) -> BaselineMetrics:
+    """Evaluate a one-candidate operation baseline."""
+    certified = 0
+    correct = 0
+    for task in tasks:
+        result = run_task_candidate(task, operation)
+        certified += int(gate_passed(result.native_report))
+        correct += int(operation == task.operation)
+    total = len(tasks)
+    return BaselineMetrics(name, certified / total, correct / total, 1.0)
+
+
+def enumerative_baseline(tasks: list[C0Task]) -> BaselineMetrics:
+    """Evaluate exact search over the supported operation set."""
+    certified = 0
+    candidates = 0
+    for task in tasks:
+        for operation in OPERATIONS:
+            candidates += 1
+            result = run_task_candidate(task, operation)
+            if gate_passed(result.native_report):
+                certified += 1
+                break
+    total = len(tasks)
+    return BaselineMetrics("enumerative-full", certified / total, 1.0, candidates / total)
+
+
+__all__ = [
+    "BaselineMetrics",
+    "PrototypeEvalReport",
+    "PrototypeInference",
+    "TrainingConfig",
+    "TrainingReport",
+    "curriculum_split",
+    "evaluate_prototype",
+    "evaluate_saved_prototype",
+    "run_learned_task",
+    "train_c0_prototype",
+]

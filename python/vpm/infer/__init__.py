@@ -28,7 +28,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 
 from vpm._reports import object_map
-from vpm.compiler import CompiledProgram, compile_task
+from vpm.compiler import CompiledProgram, compile_candidate, compile_task
 from vpm.language import NormalForm, render_certified, render_question
 from vpm.memory import MemoryLibrary
 from vpm.retrieval import RetrievalBundle, retrieve
@@ -73,9 +73,22 @@ class InferenceResult:
 
 def run_task(task: C0Task, memory: MemoryLibrary | None = None) -> InferenceResult:
     """Run Appendix-A-shaped inference for a C0 executable task."""
+    return run_task_candidate(task, task.operation, memory)
+
+
+def run_task_candidate(
+    task: C0Task,
+    operation: str,
+    memory: MemoryLibrary | None = None,
+) -> InferenceResult:
+    """Run inference using a proposed executable operation."""
     library = memory if memory is not None else MemoryLibrary()
     try:
-        compiled = compile_task(task)
+        compiled = (
+            compile_task(task)
+            if operation == task.operation
+            else compile_candidate(task, operation)
+        )
     except ValueError as exc:
         rendered = render_question(NormalForm("unknown", (), 1.0, 1.0, 1.0, str(exc)))
         return InferenceResult(task.task_id, "ask", rendered, None, None, None, {}, 0, [str(exc)])
@@ -134,4 +147,11 @@ def native_value(report: dict[str, object]) -> object:
     return value
 
 
-__all__ = ["InferenceResult", "native_route", "native_value", "run_c0_add", "run_task"]
+__all__ = [
+    "InferenceResult",
+    "native_route",
+    "native_value",
+    "run_c0_add",
+    "run_task",
+    "run_task_candidate",
+]

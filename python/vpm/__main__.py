@@ -9,13 +9,19 @@ stage; subcommands will be added per milestone in
 from __future__ import annotations
 
 import json
+from pathlib import Path
+from typing import Annotated
 
 import typer
 
 from . import __version__
 from .evaluation import evaluate_c0
 from .infer import run_c0_add
-from .tasks import stages
+from .substrate import load_prototype
+from .tasks import arithmetic_task, stages
+from .training import TrainingConfig, evaluate_saved_prototype, run_learned_task, train_c0_prototype
+
+DEFAULT_PROTOTYPE_ARTIFACT = Path("artifacts/vpm_c0_prototype.npz")
 
 app = typer.Typer(
     name="vpm",
@@ -55,6 +61,87 @@ def eval_c0_command(
         typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
     else:
         typer.echo(f"solve_rate={report.solve_rate:.3f} tasks={report.tasks}")
+
+
+@app.command("train-c0")
+def train_c0_command(
+    limit: int = typer.Option(8, help="Absolute integer limit for the generated curriculum."),
+    epochs: int = typer.Option(80, help="Training epochs."),
+    hidden_dim: int = typer.Option(32, help="Recurrent substrate width."),
+    device: str = typer.Option("auto", help="Device: auto, cpu, cuda, or cuda:N."),
+    artifact: Annotated[
+        Path,
+        typer.Option(help="NPZ artifact path for learned weights."),
+    ] = DEFAULT_PROTOTYPE_ARTIFACT,
+    as_json: bool = typer.Option(False, "--json", help="Print the full JSON report."),
+) -> None:
+    """Train the non-transformer C0 substrate proposal model."""
+    _, report = train_c0_prototype(
+        TrainingConfig(
+            limit=limit,
+            epochs=epochs,
+            hidden_dim=hidden_dim,
+            device=device,
+            artifact=artifact,
+        )
+    )
+    if as_json:
+        typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    else:
+        heldout = report.heldout
+        typer.echo(
+            " ".join(
+                [
+                    f"solve_rate={heldout.solve_rate:.3f}",
+                    f"op_acc={heldout.operation_accuracy:.3f}",
+                    f"compression={heldout.compression_ratio:.3f}",
+                    f"artifact={report.artifact}",
+                ]
+            )
+        )
+
+
+@app.command("infer-c0")
+def infer_c0_command(
+    operation: str,
+    left: int,
+    right: int,
+    artifact: Annotated[
+        Path,
+        typer.Option(help="NPZ artifact path from train-c0."),
+    ] = DEFAULT_PROTOTYPE_ARTIFACT,
+    device: str = typer.Option("auto", help="Device: auto, cpu, cuda, or cuda:N."),
+    as_json: bool = typer.Option(False, "--json", help="Print the full JSON report."),
+) -> None:
+    """Run one C0 task through a learned proposal and verifier gate."""
+    model = load_prototype(artifact, device)
+    payload = run_learned_task(model, arithmetic_task(operation, left, right))
+    if as_json:
+        typer.echo(json.dumps(payload.to_dict(), indent=2, sort_keys=True))
+    else:
+        typer.echo(payload.result.rendered)
+
+
+@app.command("eval-prototype")
+def eval_prototype_command(
+    artifact: Annotated[
+        Path,
+        typer.Option(help="NPZ artifact path from train-c0."),
+    ] = DEFAULT_PROTOTYPE_ARTIFACT,
+    limit: int = typer.Option(8, help="Absolute integer limit used for held-out generation."),
+    device: str = typer.Option("auto", help="Device: auto, cpu, cuda, or cuda:N."),
+    as_json: bool = typer.Option(False, "--json", help="Print the full JSON report."),
+) -> None:
+    """Evaluate a saved prototype against matched baselines."""
+    report = evaluate_saved_prototype(artifact, limit, device)
+    if as_json:
+        typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    else:
+        typer.echo(
+            f"solve_rate={report.solve_rate:.3f} "
+            f"op_acc={report.operation_accuracy:.3f} "
+            f"compression={report.compression_ratio:.3f}"
+        )
 
 
 @app.command("stages")

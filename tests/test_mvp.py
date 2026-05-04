@@ -9,8 +9,7 @@ import sys
 from vpm import _native
 from vpm.evaluation import evaluate_c0
 from vpm.infer import run_c0_add, run_task
-from vpm.tasks import multiplication_task
-from vpm.tasks import stages
+from vpm.tasks import multiplication_task, stages
 from vpm.training import allocate_budget
 
 

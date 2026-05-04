@@ -99,16 +99,27 @@ uv run maturin develop
 uv run vpm run-c0-add 2 3
 uv run vpm run-c0-add 2 3 --json
 uv run vpm eval-c0 --json
+uv run vpm train-c0 --epochs 80 --json
+uv run vpm eval-prototype --json
+uv run vpm infer-c0 mul 6 7 --json
 uv run vpm stages
 uv run python examples/vpm0/run.py
 uv run pytest -q
 ```
 
-The implemented C0 path is intentionally small: `add left right` is compiled
+The implemented C0 path is intentionally small: `add left right` or
+`mul left right` is compiled
 to typed bytecode, canonicalized with an auditable witness stack, executed into
 the ledger/trace DAG, verified by an exact primitive verifier, gated by
 certificate/route/authority/risk checks, rendered only after the gate passes,
 and admitted to active memory with its report.
+
+The trainable prototype adds a small recurrent, typed-event substrate on top
+of the same verifier-native path. It learns to propose C0 arithmetic
+operations, writes an `artifacts/vpm_c0_prototype.npz` weight file, runs held-out
+tasks through the native executor/verifier/gate, reports rejected proposals,
+and compares solve rate against one-candidate majority/add-only baselines plus
+an exact enumerative upper bound. Learned proposals never certify themselves.
 
 ## Note
 

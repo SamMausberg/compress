@@ -22,6 +22,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm.compiler import CompiledProgram
+from vpm.substrate.prototype import (
+    ArithmeticProposalNet,
+    OperationProposal,
+    load_prototype,
+    predict_operation,
+    save_prototype,
+)
 
 
 @dataclass(frozen=True)
@@ -40,4 +47,12 @@ def encode_update(compiled: CompiledProgram) -> SubstrateState:
     return SubstrateState((event,), (slot,), 0.0)
 
 
-__all__ = ["SubstrateState", "encode_update"]
+__all__ = [
+    "ArithmeticProposalNet",
+    "OperationProposal",
+    "SubstrateState",
+    "encode_update",
+    "load_prototype",
+    "predict_operation",
+    "save_prototype",
+]

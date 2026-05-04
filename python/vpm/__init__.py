@@ -36,10 +36,13 @@ from vpm.tasks import (
     multiplication_task,
     stages,
 )
+from vpm.training import TrainingConfig, TrainingReport, train_c0_prototype
 
 __all__ = [
     "C0Task",
     "InferenceResult",
+    "TrainingConfig",
+    "TrainingReport",
     "__version__",
     "addition_task",
     "arithmetic_task",
@@ -48,4 +51,5 @@ __all__ = [
     "run_c0_add",
     "run_task",
     "stages",
+    "train_c0_prototype",
 ]

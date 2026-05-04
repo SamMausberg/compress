@@ -40,6 +40,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm.evaluation import EvaluationReport
+from vpm.training.prototype import (
+    BaselineMetrics,
+    PrototypeEvalReport,
+    PrototypeInference,
+    TrainingConfig,
+    TrainingReport,
+    curriculum_split,
+    evaluate_saved_prototype,
+    run_learned_task,
+    train_c0_prototype,
+)
 
 
 @dataclass(frozen=True)
@@ -73,4 +84,16 @@ def allocate_budget(report: EvaluationReport, total: float = 1.0) -> BudgetAlloc
     )
 
 
-__all__ = ["BudgetAllocation", "allocate_budget"]
+__all__ = [
+    "BaselineMetrics",
+    "BudgetAllocation",
+    "PrototypeEvalReport",
+    "PrototypeInference",
+    "TrainingConfig",
+    "TrainingReport",
+    "allocate_budget",
+    "curriculum_split",
+    "evaluate_saved_prototype",
+    "run_learned_task",
+    "train_c0_prototype",
+]
