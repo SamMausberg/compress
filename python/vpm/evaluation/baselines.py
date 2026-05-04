@@ -10,6 +10,7 @@ from pathlib import Path
 
 from vpm._reports import float_field, object_map
 from vpm.evaluation import evaluate_c1
+from vpm.evaluation.neural_baselines import train_local_neural_baselines
 from vpm.tasks.c1 import as_c0_tasks, schema_split
 from vpm.training.prototype_metrics import matched_baselines
 
@@ -119,13 +120,26 @@ def evaluate_baseline_suite(limit: int = 2) -> BaselineSuite:
         )
         for baseline in matched_baselines(as_c0_tasks(train), as_c0_tasks(heldout))
     )
+    executable.extend(
+        BaselineAudit(
+            baseline.name,
+            family,
+            BaselineStatus.EXECUTED,
+            baseline.solve_rate,
+            baseline.operation_accuracy,
+            baseline.mean_candidates,
+            baseline.compute_units,
+            "local matched C1 baseline",
+        )
+        for baseline, family in zip(
+            train_local_neural_baselines(as_c0_tasks(train), as_c0_tasks(heldout), scale=limit),
+            (BaselineFamily.TRANSFORMER, BaselineFamily.SSM),
+            strict=True,
+        )
+    )
     external = tuple(
         external_baseline(family, env_var)
-        for family, env_var in (
-            (BaselineFamily.TRANSFORMER, "VPM_TRANSFORMER_BASELINE_JSON"),
-            (BaselineFamily.SSM, "VPM_SSM_BASELINE_JSON"),
-            (BaselineFamily.LLM, "VPM_LLM_BASELINE_JSON"),
-        )
+        for family, env_var in ((BaselineFamily.LLM, "VPM_LLM_BASELINE_JSON"),)
     )
     return BaselineSuite(limit, tuple(executable) + external)
 
