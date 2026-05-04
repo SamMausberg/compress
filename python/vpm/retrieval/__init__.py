@@ -11,6 +11,8 @@ This package will hold:
   produces ``R_t^-(a)`` and ``ε_rebut(a)``.
 - ``cache.py``   — content-addressed cache keyed by atom, scope,
   freshness, and split (§8 efficiency paragraph).
+- ``calibration.py`` — controlled source/rebuttal recall probes under
+  normal-form corpus shifts.
 
 For exact internal objects (arithmetic traces, proof terms), the policy
 ``R_a`` may set ``ε_src = ε_rebut = 0`` and shift the burden to
@@ -23,6 +25,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm.compiler import CompiledProgram
+from vpm.retrieval.calibration import (
+    RecallChannel,
+    RecallFn,
+    RecallShiftProbe,
+    RecallShiftReport,
+    RecallShiftTrace,
+    calibrated_recall,
+    dirty_recall_shift_probe,
+    evaluate_recall_shift,
+    exact_suffix_recall,
+    recall_shift_curriculum,
+)
 
 
 @dataclass(frozen=True)
@@ -42,4 +56,17 @@ def retrieve(compiled: CompiledProgram) -> RetrievalBundle:
     return RetrievalBundle((source,), (), 0.0, 0.0)
 
 
-__all__ = ["RetrievalBundle", "retrieve"]
+__all__ = [
+    "RecallChannel",
+    "RecallFn",
+    "RecallShiftProbe",
+    "RecallShiftReport",
+    "RecallShiftTrace",
+    "RetrievalBundle",
+    "calibrated_recall",
+    "dirty_recall_shift_probe",
+    "evaluate_recall_shift",
+    "exact_suffix_recall",
+    "recall_shift_curriculum",
+    "retrieve",
+]

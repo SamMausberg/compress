@@ -7,6 +7,7 @@ from enum import StrEnum
 
 from vpm.evaluation import evaluate_c2, evaluate_c3, evaluate_c4, evaluate_c5
 from vpm.evaluation.compute_accounting import evaluate_compute_accounting, hidden_compute_probe
+from vpm.retrieval.calibration import dirty_recall_shift_probe, evaluate_recall_shift
 from vpm.substrate import encode_task_graph
 from vpm.tasks.c0 import arithmetic_task
 from vpm.training.probes import edge_deletion_probe
@@ -20,6 +21,7 @@ class FailureMode(StrEnum):
     STAGE_SCHEDULER_BYPASS = "stage_scheduler_bypass"
     SUBSTRATE_CRITICAL_EDGE_BYPASS = "substrate_critical_edge_bypass"
     SPLIT_LEAKAGE_BYPASS = "split_leakage_bypass"
+    SOURCE_REBUTTAL_SHIFT_BYPASS = "source_rebuttal_shift_bypass"
     HIDDEN_COMPUTE_BYPASS = "hidden_compute_bypass"
     SAFETY_GATE_BYPASS = "safety_gate_bypass"
     DIALOGUE_GATE_BYPASS = "dialogue_gate_bypass"
@@ -30,7 +32,6 @@ class FailureMode(StrEnum):
 UNCOVERED_CRITERION1_CLAUSES = (
     "same-budget external LLM baseline",
     "open-domain context and semantic ambiguity collapse",
-    "source/rebuttal recall miss calibration under shift",
     "entailment false-support attacks outside controlled corpus",
     "dependence residualization calibration under shift",
     "external LLM cognitive-component dependence",
@@ -102,6 +103,8 @@ def evaluate_failure_modes() -> FailureModeReport:
         encode_task_graph(arithmetic_task("add", 2, 5)),
         ("left", "expected"),
     )
+    recall_shift = evaluate_recall_shift()
+    dirty_recall_shift = dirty_recall_shift_probe()
     compute = evaluate_compute_accounting()
     hidden_compute = hidden_compute_probe()
     return FailureModeReport(
@@ -130,6 +133,16 @@ def evaluate_failure_modes() -> FailureModeReport:
                 (
                     f"epsilon_crit={substrate_probe.report.epsilon_crit:.3f} "
                     f"failed={substrate_probe.failed}"
+                ),
+            ),
+            FailureCheck(
+                FailureMode.SOURCE_REBUTTAL_SHIFT_BYPASS,
+                not recall_shift.passed or dirty_recall_shift.passed,
+                (
+                    f"source_epsilon={recall_shift.source_epsilon:.3f} "
+                    f"rebuttal_epsilon={recall_shift.rebuttal_epsilon:.3f} "
+                    f"shifted_epsilon={recall_shift.shifted_epsilon:.3f} "
+                    f"dirty_passed={dirty_recall_shift.passed}"
                 ),
             ),
             FailureCheck(

@@ -24,6 +24,7 @@ from vpm.evaluation.hard_domains import evaluate_hard_domains
 from vpm.evaluation.phase_transition import evaluate_phase_transition
 from vpm.evaluation.red_team import red_team_replay
 from vpm.evaluation.saturation import evaluate_saturation
+from vpm.retrieval.calibration import evaluate_recall_shift
 
 
 def register_eval_commands(app: typer.Typer) -> None:
@@ -150,6 +151,22 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
         else:
             regressions = sum(result.expected_regression for result in report.results)
             typer.echo(f"passed={report.passed} regressions={regressions}")
+
+    @app.command("eval-recall-shift")
+    def eval_recall_shift_command(
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Run controlled source/rebuttal recall calibration under shift."""
+        report = evaluate_recall_shift()
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"passed={report.passed} "
+                f"source_epsilon={report.source_epsilon:.3f} "
+                f"rebuttal_epsilon={report.rebuttal_epsilon:.3f} "
+                f"shifted_epsilon={report.shifted_epsilon:.3f}"
+            )
 
     @app.command("eval-red-team")
     def eval_red_team_command(
