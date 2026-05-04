@@ -26,9 +26,9 @@ jobs:
         with:
           enable-cache: true
       - name: Set up Python
-        run: uv python install 3.13
+        run: uv python install 3.14
       - name: Sync dev environment
-        run: uv sync --group dev --no-install-project
+        run: uv sync --locked --group dev --no-install-project
       - name: ruff check
         run: uv run ruff check .
       - name: ruff format --check
@@ -50,7 +50,7 @@ jobs:
       - name: cargo fmt --check
         run: cargo fmt --all -- --check
       - name: cargo clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
   test-rust:
     name: Rust tests
@@ -60,8 +60,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --workspace
-      - run: cargo test --workspace --all-targets
+      - run: cargo build --workspace --locked
+      - run: cargo test --workspace --all-targets --locked
 
   test-python:
     name: Python tests
@@ -72,19 +72,53 @@ jobs:
       - uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-      - run: uv python install 3.13
+      - run: uv python install 3.14
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Sync project (builds the maturin extension)
-        run: uv sync --group dev
+        run: uv sync --locked --group dev
       - name: Smoke import
         run: uv run python -c "import vpm; print(vpm.__version__)"
+      - name: Boundary import
+        run: uv run python -c "from vpm._native import contract, ledger, dsl, egraph, authority, verify"
       - name: pytest
         run: uv run pytest -q
+
+  msrv:
+    name: MSRV (Rust 1.85)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.85.0
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --workspace --locked --all-targets
+
+  cargo-audit:
+    name: cargo audit
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  pip-audit:
+    name: pip-audit
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - run: uv python install 3.14
+      - name: Sync dev environment
+        run: uv sync --locked --group dev --no-install-project
+      - name: pip-audit
+        run: uv run pip-audit
 
   typos:
     name: Typos
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: crate-ci/typos@master
+      - uses: crate-ci/typos@v1.46.0

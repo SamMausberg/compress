@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=1.7,<2.0"]
+requires = ["maturin>=1.8,<2.0"]
 build-backend = "maturin"
 
 [project]
@@ -7,9 +7,9 @@ name = "vpm"
 version = "0.0.0"
 description = "Reference implementation of VPM-5.3: Verifier-Native Compressive Predictive Mechanisms."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 license = { file = "LICENSE" }
-authors = [{ name = "Sam Mausberg" }]
+authors = [{ name = "Sam Mausberg", email = "samuelmausberg@gmail.com" }]
 keywords = [
   "non-transformer",
   "compression",
@@ -24,21 +24,21 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Rust",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Typing :: Typed",
 ]
 
 dependencies = [
-  "torch>=2.6",
+  "torch>=2.11",
   "numpy>=2.1",
   "scipy>=1.14",
   "einops>=0.8",
-  "pydantic>=2.9",
-  "rich>=13.9",
-  "typer>=0.13",
-  "networkx>=3.4",
+  "pydantic>=2.10",
+  "rich>=14.0",
+  "typer>=0.15",
+  "networkx>=3.5",
 ]
 
 [project.optional-dependencies]
@@ -55,10 +55,10 @@ all = [
 vpm = "vpm.__main__:app"
 
 [project.urls]
-Homepage = "https://example.invalid/compress"
-Documentation = "https://example.invalid/compress"
-Repository = "https://example.invalid/compress"
-Changelog = "https://example.invalid/compress/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/SamMausberg/compress"
+Documentation = "https://sammausberg.github.io/compress"
+Repository = "https://github.com/SamMausberg/compress"
+Changelog = "https://github.com/SamMausberg/compress/blob/main/CHANGELOG.md"
 
 # ---------------------------------------------------------------------------
 # Maturin: build the PyO3 extension and ship the mixed Python+Rust package.
@@ -78,20 +78,20 @@ package = true
 
 [dependency-groups]
 dev = [
-  "ruff>=0.8",
-  "pyright>=1.1.390",
-  "pytest>=8.3",
-  "pytest-cov>=6.0",
-  "pytest-benchmark>=5.1",
-  "hypothesis>=6.115",
-  "pre-commit>=4.0",
-  "maturin>=1.7",
-  "typos>=1.27",
+  "ruff>=0.13",
+  "pyright>=1.1.405",
+  "pytest>=8.4",
+  "pytest-cov>=7.0",
+  "pytest-benchmark>=5.2",
+  "hypothesis>=6.140",
+  "pre-commit>=4.3",
+  "maturin>=1.8",
+  "typos>=1.36",
+  "pip-audit>=2.9",
 ]
 docs = [
-  "mkdocs-material>=9.5",
-  "mkdocs-katex>=0.0.2",
-  "mkdocstrings[python]>=0.27",
+  "mkdocs-material>=9.6",
+  "mkdocstrings[python]>=0.30",
 ]
 
 # ---------------------------------------------------------------------------
@@ -99,11 +99,19 @@ docs = [
 # ---------------------------------------------------------------------------
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py314"
 src = ["python"]
 extend-exclude = ["site", "target", ".venv"]
 
 [tool.ruff.lint]
+# The architecture spec uses Unicode en/em dashes intentionally
+# (e.g. "eqs. 22–23"); don't flag them as confusable with hyphen-minus.
+allowed-confusables = [
+  "–", "—",
+  "α", "β", "γ", "δ", "ε", "ζ", "η", "θ", "ι", "κ", "λ", "μ",
+  "ν", "ξ", "ο", "π", "ρ", "σ", "τ", "υ", "φ", "χ", "ψ", "ω",
+  "Γ", "Δ", "Θ", "Λ", "Ξ", "Π", "Σ", "Υ", "Φ", "Ψ", "Ω",
+]
 select = [
   "E", "F", "W",          # pycodestyle / pyflakes
   "I",                     # isort
@@ -145,14 +153,13 @@ docstring-code-format = true
 [tool.pyright]
 include = ["python"]
 exclude = ["**/__pycache__", "**/.pytest_cache", "site", "target"]
-pythonVersion = "3.13"
+pythonVersion = "3.14"
 typeCheckingMode = "strict"
 reportMissingImports = "error"
 reportMissingTypeStubs = "warning"
-reportUnknownMemberType = "warning"
-reportUnknownVariableType = "warning"
+reportUnknownMemberType = "error"
+reportUnknownVariableType = "error"
 useLibraryCodeForTypes = true
-stubPath = "python"
 
 # ---------------------------------------------------------------------------
 # Pytest.
@@ -173,9 +180,9 @@ markers = [
   "integration: end-to-end tests",
 ]
 filterwarnings = [
-  "error",
-  "ignore::DeprecationWarning:torch.*",
-  "ignore::UserWarning:torch.*",
+  "default",
+  "error::DeprecationWarning:vpm.*",
+  "error::UserWarning:vpm.*",
 ]
 
 # ---------------------------------------------------------------------------

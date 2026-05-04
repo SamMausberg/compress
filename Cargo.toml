@@ -15,8 +15,8 @@ version = "0.0.0"
 edition = "2021"
 rust-version = "1.85"
 license = "Apache-2.0"
-repository = "https://example.invalid/compress"
-authors = ["Sam Mausberg"]
+repository = "https://github.com/SamMausberg/compress"
+authors = ["Sam Mausberg <samuelmausberg@gmail.com>"]
 readme = "README.md"
 
 [workspace.dependencies]
@@ -29,13 +29,15 @@ vpm-authority = { path = "crates/vpm-authority", version = "0.0.0" }
 vpm-verify = { path = "crates/vpm-verify", version = "0.0.0" }
 
 # External
-egg = "0.10"
-pyo3 = { version = "0.23", features = ["extension-module", "abi3-py313"] }
+egg = "0.11"
+pyo3 = { version = "0.28.3", features = ["extension-module", "abi3-py314"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-bincode = "2"
+# bincode 3.0.0 is a placeholder (compile_error!); 2.0.x is the current
+# usable line. Migrate to the next real major when it ships.
+bincode = "2.0"
 parking_lot = "0.12"
-dashmap = "6"
+dashmap = "6.1"
 smallvec = { version = "1", features = ["serde", "union"] }
 thiserror = "2"
 anyhow = "1"
@@ -43,11 +45,11 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 blake3 = "1"
 bitvec = "1"
-roaring = "0.10"
-petgraph = "0.6"
+roaring = "0.11"
+petgraph = "0.8"
 
 # Dev
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 proptest = "1"
 insta = { version = "1", features = ["yaml", "json"] }
 
@@ -88,3 +90,7 @@ opt-level = 0
 
 [profile.test]
 opt-level = 1
+
+[workspace.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

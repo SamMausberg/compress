@@ -10,6 +10,8 @@ readme.workspace = true
 description = "PyO3 bindings — exposes the VPM-5.3 Rust core to Python as `vpm._native`."
 
 [lib]
+# Cargo's lib name; the Python-visible module name is overridden to
+# `vpm._native` by `[tool.maturin].module-name` in pyproject.toml.
 name = "vpm_native"
 crate-type = ["cdylib", "rlib"]
 

@@ -5,10 +5,11 @@ type: software
 authors:
   - family-names: Mausberg
     given-names: Sam
+    email: samuelmausberg@gmail.com
 license: Apache-2.0
 version: 0.0.0
 date-released: 2026-05-03
-repository-code: "https://example.invalid/compress"
+repository-code: "https://github.com/SamMausberg/compress"
 keywords:
   - non-transformer
   - compression
@@ -22,5 +23,6 @@ references:
     authors:
       - family-names: Mausberg
         given-names: Sam
+        email: samuelmausberg@gmail.com
     year: 2026
     month: 5

@@ -14,4 +14,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build system: `uv` for Python, Cargo workspace for Rust, `maturin` for the PyO3 binding.
 - CI pipeline (`ruff`, `pyright`, `pytest`, `cargo fmt`, `cargo clippy`, `cargo test`).
 
-[Unreleased]: https://example.invalid/compress/compare/HEAD...HEAD
+[Unreleased]: https://github.com/SamMausberg/compress/compare/HEAD...HEAD

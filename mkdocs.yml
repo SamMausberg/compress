@@ -1,7 +1,7 @@
 site_name: "compress — VPM-5.3"
 site_description: "Reference implementation of VPM-5.3: Verifier-Native Compressive Predictive Mechanisms."
-site_url: "https://example.invalid/compress"
-repo_url: "https://example.invalid/compress"
+site_url: "https://sammausberg.github.io/compress"
+repo_url: "https://github.com/SamMausberg/compress"
 edit_uri: "edit/main/docs/"
 
 docs_dir: docs

@@ -8,5 +8,14 @@ on the Rust side, mirror the public signature here so Pyright /
 
 from __future__ import annotations
 
+from types import ModuleType
+
 __version__: str
 __doc__: str
+
+contract: ModuleType
+ledger: ModuleType
+dsl: ModuleType
+egraph: ModuleType
+authority: ModuleType
+verify: ModuleType

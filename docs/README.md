@@ -16,7 +16,7 @@ implementation of **VPM-5.3: Verifier-Native Compressive Predictive Mechanisms**
 
 ## Reading order for new contributors
 
-1. Start with the [project README](../README.md) for the thesis.
+1. Start with the [project README](https://github.com/SamMausberg/compress#readme) for the thesis.
 2. Read the [architecture overview](./architecture/README.md) and the
    [Abstract](./architecture/00-abstract.md).
 3. Skim §1 invariants and §2 mechanism definitions — these constrain everything else.

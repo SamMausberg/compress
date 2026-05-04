@@ -1,4 +1,4 @@
-//! `vpm-py`: PyO3 bindings exposing the VPM-5.3 Rust core to Python as
+//! `vpm-py`: `PyO3` bindings exposing the VPM-5.3 Rust core to Python as
 //! `vpm._native`.
 //!
 //! This crate is the **only** Rust → Python boundary. The Python package
@@ -31,7 +31,59 @@ use pyo3::prelude::*;
 #[pymodule]
 #[pyo3(name = "_native")]
 fn vpm_py_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("__doc__", "VPM-5.3 native core (Rust). See docs/architecture/.")?;
+    let py = m.py();
+    m.add(
+        "__doc__",
+        "VPM-5.3 native core (Rust). See docs/architecture/.",
+    )?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+
+    register_submodule(
+        m,
+        py,
+        "contract",
+        "Typed atoms, modes, contracts Γ — see vpm_core::contract.",
+    )?;
+    register_submodule(
+        m,
+        py,
+        "ledger",
+        "Append-only ledger Λ and trace DAG — see vpm_ledger.",
+    )?;
+    register_submodule(
+        m,
+        py,
+        "dsl",
+        "Typed bytecode and deterministic executor — see vpm_dsl.",
+    )?;
+    register_submodule(
+        m,
+        py,
+        "egraph",
+        "E-graph / equality-saturation wrapper — see vpm_egraph.",
+    )?;
+    register_submodule(
+        m,
+        py,
+        "authority",
+        "Authority lattice and declassification — see vpm_authority.",
+    )?;
+    register_submodule(
+        m,
+        py,
+        "verify",
+        "Verifier registry, e-values, falsifier, gates — see vpm_verify.",
+    )?;
     Ok(())
+}
+
+fn register_submodule(
+    parent: &Bound<'_, PyModule>,
+    py: Python<'_>,
+    name: &str,
+    doc: &str,
+) -> PyResult<()> {
+    let submod = PyModule::new(py, name)?;
+    submod.add("__doc__", doc)?;
+    parent.add_submodule(&submod)
 }
