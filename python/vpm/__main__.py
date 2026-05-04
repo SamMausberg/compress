@@ -57,10 +57,28 @@ def run_c0_command(
     left: str,
     right: str,
     expected: str | None = None,
+    authority: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--authority",
+            help="Authority label to request; repeat for multiple labels.",
+        ),
+    ] = None,
+    risk_privacy: float = typer.Option(0.0, help="Privacy risk charge."),
+    risk_capability: float = typer.Option(0.0, help="Capability risk charge."),
+    risk_impact: float = typer.Option(0.0, help="Impact risk charge."),
     as_json: bool = typer.Option(False, "--json", help="Print the full JSON report."),
 ) -> None:
     """Run a supported C0 typed task through the verifier gate."""
-    result = run_task(typed_task(operation, left, right, expected))
+    result = run_task(
+        typed_task(operation, left, right, expected),
+        labels=tuple(authority or ["data"]),
+        risk={
+            "privacy": risk_privacy,
+            "capability": risk_capability,
+            "impact": risk_impact,
+        },
+    )
     if as_json:
         typer.echo(json.dumps(result.to_dict(), indent=2, sort_keys=True))
     else:

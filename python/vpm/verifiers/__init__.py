@@ -33,16 +33,38 @@ from vpm import _native
 from vpm._reports import float_field, object_map
 from vpm.compiler import CompiledProgram
 
+RiskMap = dict[str, float]
 
-def native_c0_report(compiled: CompiledProgram) -> dict[str, object]:
+
+def native_c0_report(
+    compiled: CompiledProgram,
+    labels: tuple[str, ...] = ("data",),
+    risk: RiskMap | None = None,
+) -> dict[str, object]:
     """Run the native exact verifier/gate path for a compiled C0 task."""
-    raw = _native.run_c0_typed_json(
+    raw = _native.run_c0_typed_policy_json(
         compiled.operation,
         native_value_json(compiled.left),
         native_value_json(compiled.right),
         native_value_json(compiled.expected),
+        json.dumps(labels),
+        risk_json(risk),
     )
     return cast(dict[str, object], json.loads(raw))
+
+
+def risk_json(risk: RiskMap | None = None) -> str:
+    """Serialize a partial Python risk map into the Rust ``RiskVector`` shape."""
+    values = {
+        "impact": 0.0,
+        "privacy": 0.0,
+        "capability": 0.0,
+        "influence": 0.0,
+        "dependence": 0.0,
+    }
+    if risk:
+        values.update(risk)
+    return json.dumps(values, separators=(",", ":"))
 
 
 def native_value_json(value: object) -> str:
@@ -72,4 +94,11 @@ def gate_passed(report: dict[str, object]) -> bool:
     return gate is not None and gate.get("passed") is True
 
 
-__all__ = ["certificate_score", "gate_passed", "native_c0_report", "native_value_json"]
+__all__ = [
+    "RiskMap",
+    "certificate_score",
+    "gate_passed",
+    "native_c0_report",
+    "native_value_json",
+    "risk_json",
+]

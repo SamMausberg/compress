@@ -22,9 +22,9 @@
 //! Rust.
 
 use pyo3::{exceptions::PyValueError, prelude::*};
-use vpm_core::{Contract, Value};
-use vpm_dsl::{c0_add_program, c0_concat_program, c0_eq_program, c0_mul_program};
-use vpm_verify::run_program;
+use vpm_core::{Contract, RiskVector, Value};
+use vpm_dsl::{c0_add_program, c0_concat_program, c0_eq_program, c0_mul_program, Program};
+use vpm_verify::{run_program, run_program_with_policy};
 
 /// The `vpm._native` Python extension module.
 ///
@@ -44,6 +44,7 @@ fn vpm_py_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_c0_add_json, m)?)?;
     m.add_function(wrap_pyfunction!(run_c0_arith_json, m)?)?;
     m.add_function(wrap_pyfunction!(run_c0_typed_json, m)?)?;
+    m.add_function(wrap_pyfunction!(run_c0_typed_policy_json, m)?)?;
 
     register_submodule(
         m,
@@ -125,31 +126,62 @@ fn run_c0_typed_json(
     let left = parse_value(left_json)?;
     let right = parse_value(right_json)?;
     let expected = parse_value(expected_json)?;
-    let program = match operation {
-        "add" => c0_add_program(
-            require_int(left, operation)?,
-            require_int(right, operation)?,
-        ),
-        "mul" => c0_mul_program(
-            require_int(left, operation)?,
-            require_int(right, operation)?,
-        ),
-        "concat" => c0_concat_program(
-            require_text(left, operation)?,
-            require_text(right, operation)?,
-        ),
-        "eq" => c0_eq_program(left, right),
-        _ => {
-            return Err(PyValueError::new_err(format!(
-                "unsupported C0 typed operation: {operation}"
-            )));
-        }
-    };
+    let program = build_typed_program(operation, left, right)?;
     let report = run_program(&program, expected).map_err(PyValueError::new_err)?;
     serde_json::to_string_pretty(&report).map_err(json_error)
 }
 
+/// Run a Rust C0 typed candidate under explicit authority/risk policy.
+#[pyfunction]
+fn run_c0_typed_policy_json(
+    operation: &str,
+    left_json: &str,
+    right_json: &str,
+    expected_json: &str,
+    labels_json: &str,
+    risk_json: &str,
+) -> PyResult<String> {
+    let left = parse_value(left_json)?;
+    let right = parse_value(right_json)?;
+    let expected = parse_value(expected_json)?;
+    let labels = parse_labels(labels_json)?;
+    let risk = parse_risk(risk_json)?;
+    let program = build_typed_program(operation, left, right)?;
+    let report = run_program_with_policy(&program, expected, &labels, risk)
+        .map_err(PyValueError::new_err)?;
+    serde_json::to_string_pretty(&report).map_err(json_error)
+}
+
+fn build_typed_program(operation: &str, left: Value, right: Value) -> PyResult<Program> {
+    match operation {
+        "add" => Ok(c0_add_program(
+            require_int(left, operation)?,
+            require_int(right, operation)?,
+        )),
+        "mul" => Ok(c0_mul_program(
+            require_int(left, operation)?,
+            require_int(right, operation)?,
+        )),
+        "concat" => Ok(c0_concat_program(
+            require_text(left, operation)?,
+            require_text(right, operation)?,
+        )),
+        "eq" => Ok(c0_eq_program(left, right)),
+        _ => Err(PyValueError::new_err(format!(
+            "unsupported C0 typed operation: {operation}"
+        ))),
+    }
+}
+
 fn parse_value(raw: &str) -> PyResult<Value> {
+    serde_json::from_str(raw).map_err(json_error)
+}
+
+fn parse_labels(raw: &str) -> PyResult<Vec<String>> {
+    serde_json::from_str(raw).map_err(json_error)
+}
+
+fn parse_risk(raw: &str) -> PyResult<RiskVector> {
     serde_json::from_str(raw).map_err(json_error)
 }
 

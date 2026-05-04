@@ -29,3 +29,11 @@ def run_c0_typed_json(
     right_json: str,
     expected_json: str,
 ) -> str: ...
+def run_c0_typed_policy_json(
+    operation: str,
+    left_json: str,
+    right_json: str,
+    expected_json: str,
+    labels_json: str,
+    risk_json: str,
+) -> str: ...

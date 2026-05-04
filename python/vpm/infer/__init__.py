@@ -34,7 +34,7 @@ from vpm.memory import MemoryLibrary
 from vpm.retrieval import RetrievalBundle, retrieve
 from vpm.substrate import SubstrateState, encode_update
 from vpm.tasks.c0 import C0Task, addition_task
-from vpm.verifiers import certificate_score, gate_passed, native_c0_report
+from vpm.verifiers import RiskMap, certificate_score, gate_passed, native_c0_report
 
 
 def str_list() -> list[str]:
@@ -71,15 +71,22 @@ class InferenceResult:
         }
 
 
-def run_task(task: C0Task, memory: MemoryLibrary | None = None) -> InferenceResult:
+def run_task(
+    task: C0Task,
+    memory: MemoryLibrary | None = None,
+    labels: tuple[str, ...] = ("data",),
+    risk: RiskMap | None = None,
+) -> InferenceResult:
     """Run Appendix-A-shaped inference for a C0 executable task."""
-    return run_task_candidate(task, task.operation, memory)
+    return run_task_candidate(task, task.operation, memory, labels, risk)
 
 
 def run_task_candidate(
     task: C0Task,
     operation: str,
     memory: MemoryLibrary | None = None,
+    labels: tuple[str, ...] = ("data",),
+    risk: RiskMap | None = None,
 ) -> InferenceResult:
     """Run inference using a proposed executable operation."""
     library = memory if memory is not None else MemoryLibrary()
@@ -96,7 +103,7 @@ def run_task_candidate(
     retrieval = retrieve(compiled)
     substrate = encode_update(compiled)
     try:
-        report = native_c0_report(compiled)
+        report = native_c0_report(compiled, labels, risk)
     except ValueError as exc:
         return InferenceResult(
             task.task_id,

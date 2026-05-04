@@ -82,6 +82,26 @@ def test_wrong_candidate_is_refused_and_not_admitted_to_memory() -> None:
     assert memory.active == {}
 
 
+def test_authority_policy_rejects_certified_value_without_memory_write() -> None:
+    memory = MemoryLibrary()
+    result = run_task(arithmetic_task("add", 2, 3), memory, labels=("capability",))
+    assert result.rendered == "refusal"
+    assert result.native_report["verification"]["passed"] is True
+    assert result.native_report["gate"]["passed"] is False
+    assert result.native_report["gate"]["authority"]["auth_ok"] is False
+    assert result.memory_active == 0
+    assert memory.active == {}
+
+
+def test_componentwise_risk_policy_rejects_certified_value() -> None:
+    result = run_task(arithmetic_task("add", 2, 3), risk={"privacy": 0.1})
+    assert result.rendered == "refusal"
+    assert result.native_report["verification"]["passed"] is True
+    assert result.native_report["gate"]["passed"] is False
+    assert result.native_report["gate"]["authority"]["risk_ok"] is False
+    assert result.native_report["ledger"]["total_risk"]["privacy"] == 0.1
+
+
 def test_evaluation_and_budget_are_connected() -> None:
     metrics = evaluate_c0()
     budget = allocate_budget(metrics)
@@ -124,3 +144,26 @@ def test_cli_runs_generic_text_task() -> None:
         text=True,
     )
     assert completed.stdout.startswith("abcd ")
+
+
+def test_cli_exposes_authority_rejection() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "vpm",
+            "run-c0",
+            "add",
+            "2",
+            "3",
+            "--authority",
+            "capability",
+            "--json",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(completed.stdout)
+    assert payload["rendered"] == "refusal"
+    assert payload["native_report"]["gate"]["authority"]["auth_ok"] is False

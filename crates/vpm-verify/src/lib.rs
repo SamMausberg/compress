@@ -209,6 +209,16 @@ pub struct VerticalSliceReport {
 
 /// Canonicalize, execute, verify, gate, and ledger a C0 program.
 pub fn run_program(program: &Program, expected: Value) -> Result<VerticalSliceReport, String> {
+    run_program_with_policy(program, expected, &["data".to_owned()], RiskVector::zero())
+}
+
+/// Canonicalize, execute, verify, and gate under explicit authority/risk policy.
+pub fn run_program_with_policy(
+    program: &Program,
+    expected: Value,
+    labels: &[String],
+    risk: RiskVector,
+) -> Result<VerticalSliceReport, String> {
     let contract = Contract::c0();
     let canonical = canonicalize(program);
     let mut execution = execute(&canonical.program).map_err(|err| err.to_string())?;
@@ -223,17 +233,13 @@ pub fn run_program(program: &Program, expected: Value) -> Result<VerticalSliceRe
     let mut xi = Certifiability::exact_local();
     xi.verification_cost = execution.cost + 1.0;
     xi.support_loss = canonical.support_loss;
-    let gate = gate(
-        &contract,
-        xi,
-        &verification.certificate,
-        &["data".to_owned()],
-        RiskVector::zero(),
-    );
+    xi.risk = risk;
+    let gate = gate(&contract, xi, &verification.certificate, labels, risk);
 
     let mut verify_row = LedgerDraft::new(EntryType::Verification, contract.name.clone());
     verify_row.mode = Mode::Certified;
     verify_row.sem = vec![execution.atom.clone()];
+    verify_row.auth = labels.to_vec();
     verify_row.cert = verification.certificate.score();
     verify_row.cost = 1.0;
     execution.ledger.append(verify_row);
@@ -245,8 +251,10 @@ pub fn run_program(program: &Program, expected: Value) -> Result<VerticalSliceRe
         Mode::Refusal
     };
     gate_row.sem = vec![execution.atom];
+    gate_row.auth = labels.to_vec();
     gate_row.cert = gate.certificate_score;
     gate_row.cost = 1.0;
+    gate_row.risk = risk;
     execution.ledger.append(gate_row);
 
     Ok(VerticalSliceReport {
@@ -262,8 +270,8 @@ pub fn run_program(program: &Program, expected: Value) -> Result<VerticalSliceRe
 
 #[cfg(test)]
 mod tests {
-    use super::run_program;
-    use vpm_core::Value;
+    use super::{run_program, run_program_with_policy};
+    use vpm_core::{RiskVector, Value};
     use vpm_dsl::{c0_add_program, c0_concat_program, c0_eq_program, c0_mul_program};
 
     #[test]
@@ -311,5 +319,39 @@ mod tests {
         assert!(report.verification.passed);
         assert!(report.gate.passed);
         assert_eq!(report.ledger.entries, 6);
+    }
+
+    #[test]
+    fn policy_gate_rejects_disallowed_authority() {
+        let report = run_program_with_policy(
+            &c0_add_program(2, 3),
+            Value::Int(5),
+            &["capability".to_owned()],
+            RiskVector::zero(),
+        )
+        .expect("runs");
+        assert!(report.verification.passed);
+        assert!(!report.gate.passed);
+        assert!(!report.gate.authority.auth_ok);
+        assert_eq!(report.ledger.total_risk, RiskVector::zero());
+    }
+
+    #[test]
+    fn policy_gate_rejects_componentwise_risk() {
+        let risk = RiskVector {
+            privacy: 0.1,
+            ..RiskVector::zero()
+        };
+        let report = run_program_with_policy(
+            &c0_add_program(2, 3),
+            Value::Int(5),
+            &["data".to_owned()],
+            risk,
+        )
+        .expect("runs");
+        assert!(report.verification.passed);
+        assert!(!report.gate.passed);
+        assert!(!report.gate.authority.risk_ok);
+        assert_eq!(report.ledger.total_risk.privacy, 0.1);
     }
 }
