@@ -22,6 +22,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from vpm.compiler.posterior import (
+    CompilerAlternative,
+    CompilerPosterior,
+    compiler_posterior,
+)
+from vpm.compiler.score_head import ScoreWeights, proposal_score
 from vpm.language import NormalForm, normalize
 from vpm.tasks.c0 import C0Task, C0Value
 
@@ -68,6 +74,7 @@ def compile_candidate(task: C0Task, operation: str) -> CompiledProgram:
     if not normal_form.ok:
         msg = normal_form.ask or "task is not in the C0 executable language"
         raise ValueError(msg)
+    posterior = compiler_posterior(task, (operation,))
     return CompiledProgram(
         task_id=task.task_id,
         operation=operation,
@@ -75,7 +82,18 @@ def compile_candidate(task: C0Task, operation: str) -> CompiledProgram:
         right=task.right,
         expected=task.expected,
         normal_form=normal_form,
+        support_loss=posterior.support_loss,
     )
 
 
-__all__ = ["CompiledProgram", "cnf_posterior", "compile_candidate", "compile_task"]
+__all__ = [
+    "CompiledProgram",
+    "CompilerAlternative",
+    "CompilerPosterior",
+    "ScoreWeights",
+    "cnf_posterior",
+    "compile_candidate",
+    "compile_task",
+    "compiler_posterior",
+    "proposal_score",
+]
