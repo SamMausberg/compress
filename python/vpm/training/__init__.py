@@ -40,6 +40,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm.evaluation import EvaluationReport
+from vpm.training.active_query import ActiveQuery, select_active_query
+from vpm.training.budget import BudgetChannel, BudgetPlan, allocate_budget_channels
+from vpm.training.coordinator import TrainingBlock, block_coordinate_plan
+from vpm.training.gflow import mechanism_reward, trajectory_balance_loss
 from vpm.training.losses import LOSS_NAMES, LossReport, loss_report
 from vpm.training.prototype import (
     BaselineMetrics,
@@ -64,6 +68,7 @@ from vpm.training.teacher import (
     TeacherTrace,
     teacher_posterior,
 )
+from vpm.training.weight_balancer import LossWeightState, balance_loss_weights
 
 
 @dataclass(frozen=True)
@@ -99,10 +104,14 @@ def allocate_budget(report: EvaluationReport, total: float = 1.0) -> BudgetAlloc
 
 __all__ = [
     "LOSS_NAMES",
+    "ActiveQuery",
     "BaselineMetrics",
     "BudgetAllocation",
+    "BudgetChannel",
+    "BudgetPlan",
     "CompressionMetrics",
     "LossReport",
+    "LossWeightState",
     "PrototypeEvalReport",
     "PrototypeInference",
     "PrototypeTrace",
@@ -110,17 +119,24 @@ __all__ = [
     "TeacherPosterior",
     "TeacherPosteriorEntry",
     "TeacherTrace",
+    "TrainingBlock",
     "TrainingConfig",
     "TrainingReport",
     "allocate_budget",
+    "allocate_budget_channels",
+    "balance_loss_weights",
+    "block_coordinate_plan",
     "curriculum_split",
     "evaluate_saved_c1_prototype",
     "evaluate_saved_prototype",
     "loss_report",
     "matched_baselines",
+    "mechanism_reward",
     "run_learned_task",
+    "select_active_query",
     "split_report",
     "teacher_posterior",
     "train_c0_prototype",
     "train_c1_prototype",
+    "trajectory_balance_loss",
 ]
