@@ -6,6 +6,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from vpm.evaluation import evaluate_c2, evaluate_c3, evaluate_c4, evaluate_c5
+from vpm.substrate import encode_task_graph
+from vpm.tasks.c0 import arithmetic_task
+from vpm.training.probes import edge_deletion_probe
 from vpm.training.splits import SplitAssignment
 
 
@@ -14,6 +17,7 @@ class FailureMode(StrEnum):
 
     SUPPORT_GUARD_BYPASS = "support_guard_bypass"
     STAGE_SCHEDULER_BYPASS = "stage_scheduler_bypass"
+    SUBSTRATE_CRITICAL_EDGE_BYPASS = "substrate_critical_edge_bypass"
     SPLIT_LEAKAGE_BYPASS = "split_leakage_bypass"
     SAFETY_GATE_BYPASS = "safety_gate_bypass"
     DIALOGUE_GATE_BYPASS = "dialogue_gate_bypass"
@@ -23,7 +27,6 @@ class FailureMode(StrEnum):
 
 UNCOVERED_CRITERION1_CLAUSES = (
     "same-budget transformer/SSM/program-synthesis baselines",
-    "substrate critical-edge omission after exact rehydration",
     "open-domain context and semantic ambiguity collapse",
     "source/rebuttal recall miss calibration under shift",
     "entailment false-support attacks outside controlled corpus",
@@ -94,6 +97,10 @@ def evaluate_failure_modes() -> FailureModeReport:
         verifier_train=frozenset({"shared"}),
         audit=frozenset({"shared"}),
     )
+    substrate_probe = edge_deletion_probe(
+        encode_task_graph(arithmetic_task("add", 2, 5)),
+        ("left", "expected"),
+    )
     return FailureModeReport(
         checks=(
             FailureCheck(
@@ -113,6 +120,14 @@ def evaluate_failure_modes() -> FailureModeReport:
                 FailureMode.SPLIT_LEAKAGE_BYPASS,
                 not clean_split.clean or dirty_split.clean,
                 (f"clean_split={clean_split.clean} dirty_violations={dirty_split.violations()}"),
+            ),
+            FailureCheck(
+                FailureMode.SUBSTRATE_CRITICAL_EDGE_BYPASS,
+                not substrate_probe.failed,
+                (
+                    f"epsilon_crit={substrate_probe.report.epsilon_crit:.3f} "
+                    f"failed={substrate_probe.failed}"
+                ),
             ),
             FailureCheck(
                 FailureMode.SAFETY_GATE_BYPASS,

@@ -7,7 +7,10 @@ from enum import StrEnum
 
 from vpm.infer import InferenceStage, StageTransition, guard_support, schedule_stages
 from vpm.memory import AdmissionEvidence, admit_active
+from vpm.substrate import encode_task_graph
+from vpm.tasks.c0 import arithmetic_task
 from vpm.training import SplitAssignment, TeacherTrace, teacher_posterior
+from vpm.training.probes import edge_deletion_probe
 
 
 class AblationName(StrEnum):
@@ -15,6 +18,7 @@ class AblationName(StrEnum):
 
     SUPPORT_GUARD = "support_guard"
     STAGE_SCHEDULER = "stage_scheduler"
+    SUBSTRATE_RECALL = "substrate_recall"
     MEMORY_ADMISSION = "memory_admission"
     SPLIT_POLICY = "split_policy"
     TEACHER_FILTER = "teacher_filter"
@@ -70,6 +74,7 @@ def evaluate_ablations() -> AblationReport:
         (
             support_guard_ablation(),
             stage_scheduler_ablation(),
+            substrate_recall_ablation(),
             memory_admission_ablation(),
             split_policy_ablation(),
             teacher_filter_ablation(),
@@ -140,6 +145,20 @@ def memory_admission_ablation() -> AblationResult:
         control_passed=not decision.admitted,
         ablated_failed=True,
         detail=f"reasons={decision.reasons}",
+    )
+
+
+def substrate_recall_ablation() -> AblationResult:
+    """Probe that critical-edge recall catches omitted substrate edges."""
+    probe = edge_deletion_probe(
+        encode_task_graph(arithmetic_task("add", 2, 5)),
+        ("left", "expected"),
+    )
+    return AblationResult(
+        AblationName.SUBSTRATE_RECALL,
+        control_passed=probe.failed,
+        ablated_failed=True,
+        detail=f"epsilon_crit={probe.report.epsilon_crit:.3f}",
     )
 
 
