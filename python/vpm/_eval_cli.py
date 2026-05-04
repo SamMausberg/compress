@@ -211,7 +211,8 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
             typer.echo(
                 f"passed={report.passed} "
                 f"failures={len(report.failures.failures)} "
-                f"ablations={len(report.ablations.results)}"
+                f"ablations={len(report.ablations.results)} "
+                f"hard_domains={report.hard_domains.tasks}"
             )
 
 

@@ -27,6 +27,7 @@ def test_red_team_replay_combines_failures_and_ablations() -> None:
     payload = report.to_dict()
     assert payload["failures"]["passed"] is True
     assert payload["ablations"]["passed"] is True
+    assert payload["hard_domains"]["solve_rate"] == 1.0
 
 
 def test_cli_runs_red_team_replay() -> None:
@@ -38,3 +39,4 @@ def test_cli_runs_red_team_replay() -> None:
     )
     payload = json.loads(completed.stdout)
     assert payload["passed"] is True
+    assert payload["hard_domains"]["tasks"] == 4
