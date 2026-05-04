@@ -91,7 +91,7 @@ class EvaluationReport:
         """Solved fraction."""
         return self.solved / self.tasks if self.tasks else 0.0
 
-    def to_dict(self) -> dict[str, float | int]:
+    def to_dict(self) -> dict[str, object]:
         """JSON-friendly metrics."""
         return {
             "tasks": self.tasks,

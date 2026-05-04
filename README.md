@@ -156,6 +156,10 @@ splits and `eval-c1-prototype --json` reports the matched baselines,
 compression/frontier metrics, and verifier-gated traces.
 `eval-c0 --json` and `eval-c1 --json` summarize source coverage, rebuttal
 clearance, and realization-loss rates in their `evidence` blocks.
+The example scripts mirror this: `examples/vpm0/run.py` prints runtime
+diagnostics plus C0 inference/evaluation, and `examples/vpm0/train.py`
+prints C0/C1 training reports, reloaded evaluations, learned inference, and
+learned authority/risk refusals.
 
 Python API:
 

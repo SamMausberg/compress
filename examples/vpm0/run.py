@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 
+from vpm.diagnostics import collect_diagnostics
 from vpm.evaluation import evaluate_c0
 from vpm.infer import run_c0_add
 from vpm.training import allocate_budget
@@ -19,6 +20,7 @@ def main() -> None:
     metrics = evaluate_c0()
     budget = allocate_budget(metrics)
     payload = {
+        "doctor": collect_diagnostics().to_dict(),
         "single": result.to_dict(),
         "metrics": metrics.to_dict(),
         "budget": budget.to_dict(),
