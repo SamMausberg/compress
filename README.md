@@ -108,6 +108,7 @@ uv run vpm run-c0 add 2 3 --authority capability --json
 uv run vpm run-c0 add 2 3 --risk-privacy 0.1 --json
 uv run vpm eval-c0 --json
 uv run vpm eval-c1 --json
+uv run vpm eval-c2 --json
 uv run vpm train-c0 --epochs 80 --json
 uv run vpm eval-prototype --json
 uv run vpm train-c1 --epochs 80 --json
@@ -156,6 +157,9 @@ splits and `eval-c1-prototype --json` reports the matched baselines,
 compression/frontier metrics, and verifier-gated traces.
 `eval-c0 --json` and `eval-c1 --json` summarize source coverage, rebuttal
 clearance, and realization-loss rates in their `evidence` blocks.
+The C2 executable subset adds active tests for partial observations:
+`eval-c2 --json` shows candidate support before/after the active test and
+then routes the selected operation through the same verifier gate.
 The example scripts mirror this: `examples/vpm0/run.py` prints runtime
 diagnostics plus C0 inference/evaluation, and `examples/vpm0/train.py`
 prints C0/C1 training reports, reloaded evaluations, learned inference, and

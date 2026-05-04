@@ -29,6 +29,7 @@ from vpm._reports import float_field, object_map
 from vpm.infer import InferenceResult, run_task, run_task_candidate
 from vpm.tasks.c0 import C0Task, curriculum
 from vpm.tasks.c1 import C1Task, hidden_schema_curriculum
+from vpm.tasks.c2 import ActiveTestTrace, C2Task, active_curriculum, active_test
 from vpm.verifiers import gate_passed
 
 
@@ -104,6 +105,48 @@ class EvaluationReport:
         }
 
 
+@dataclass(frozen=True)
+class ActiveEvaluationReport:
+    """C2 active-test evaluation plus verifier-gated outcomes."""
+
+    tasks: int
+    verifier: EvaluationReport
+    traces: tuple[ActiveTestTrace, ...]
+
+    @property
+    def solve_rate(self) -> float:
+        """Verifier-certified solve rate after active testing."""
+        return self.verifier.solved / self.tasks if self.tasks else 0.0
+
+    @property
+    def support_reduction_rate(self) -> float:
+        """Fraction of tasks whose active test reduced candidate support."""
+        reduced = sum(trace.support_reduced for trace in self.traces)
+        return reduced / self.tasks if self.tasks else 0.0
+
+    @property
+    def mean_candidates_before(self) -> float:
+        """Mean executable candidate count before active testing."""
+        return mean([float(len(trace.candidates_before)) for trace in self.traces])
+
+    @property
+    def mean_candidates_after(self) -> float:
+        """Mean executable candidate count after active testing."""
+        return mean([float(len(trace.candidates_after)) for trace in self.traces])
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-friendly active-test report."""
+        return {
+            "tasks": self.tasks,
+            "solve_rate": self.solve_rate,
+            "support_reduction_rate": self.support_reduction_rate,
+            "mean_candidates_before": self.mean_candidates_before,
+            "mean_candidates_after": self.mean_candidates_after,
+            "verifier": self.verifier.to_dict(),
+            "traces": [trace.to_dict() for trace in self.traces],
+        }
+
+
 def evaluate_c0(tasks: list[C0Task] | None = None) -> EvaluationReport:
     """Run the C0 curriculum through the MVP inference loop."""
     cases = curriculum() if tasks is None else tasks
@@ -116,6 +159,25 @@ def evaluate_c1(tasks: list[C1Task] | None = None, limit: int = 3) -> Evaluation
     cases = hidden_schema_curriculum(limit) if tasks is None else tasks
     results = [run_task_candidate(task.to_c0_task(), task.operation) for task in cases]
     return summarize(results)
+
+
+def evaluate_c2(
+    tasks: list[C2Task] | None = None,
+    limit: int = 3,
+) -> ActiveEvaluationReport:
+    """Run C2 active-test selection and verifier-gated execution."""
+    cases = active_curriculum(limit) if tasks is None else tasks
+    traces = tuple(active_test(task) for task in cases)
+    results = [
+        run_task_candidate(task.to_c0_task(trace.selected_operation), trace.selected_operation)
+        for task, trace in zip(cases, traces, strict=True)
+        if trace.selected_operation is not None
+    ]
+    return ActiveEvaluationReport(
+        tasks=len(cases),
+        verifier=summarize(results),
+        traces=traces,
+    )
 
 
 def summarize(results: list[InferenceResult]) -> EvaluationReport:
@@ -184,11 +246,13 @@ def mean(values: list[float]) -> float:
 
 
 __all__ = [
+    "ActiveEvaluationReport",
     "EvaluationReport",
     "EvidenceMetrics",
     "certificate",
     "evaluate_c0",
     "evaluate_c1",
+    "evaluate_c2",
     "evidence_metrics",
     "summarize",
 ]

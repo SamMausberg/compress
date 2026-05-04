@@ -47,6 +47,7 @@ from vpm.tasks.c0 import (
 from vpm.tasks.c0 import stage_spec as c0_stage
 from vpm.tasks.c1 import C1Task, as_c0_tasks, hidden_schema_curriculum, schema_split
 from vpm.tasks.c1 import stage_spec as c1_stage
+from vpm.tasks.c2 import ActiveTestTrace, C2Task, active_curriculum, active_test
 from vpm.tasks.c2 import stage_spec as c2_stage
 from vpm.tasks.c3 import stage_spec as c3_stage
 from vpm.tasks.c4 import stage_spec as c4_stage
@@ -60,10 +61,14 @@ def stages() -> tuple[StageSpec, ...]:
 
 
 __all__ = [
+    "ActiveTestTrace",
     "C0Task",
     "C0Value",
     "C1Task",
+    "C2Task",
     "StageSpec",
+    "active_curriculum",
+    "active_test",
     "addition_task",
     "arithmetic_task",
     "as_c0_tasks",

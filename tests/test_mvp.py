@@ -7,10 +7,12 @@ import subprocess
 import sys
 
 from vpm import _native
-from vpm.evaluation import evaluate_c0, evaluate_c1
+from vpm.evaluation import evaluate_c0, evaluate_c1, evaluate_c2
 from vpm.infer import run_c0_add, run_task, run_task_candidate
 from vpm.memory import MemoryLibrary
 from vpm.tasks import (
+    active_curriculum,
+    active_test,
     arithmetic_task,
     as_c0_tasks,
     concat_task,
@@ -152,11 +154,29 @@ def test_c1_evaluation_runs_executable_hidden_schema_subset() -> None:
     assert metrics.to_dict()["evidence"]["realization_ok_rate"] == 1.0
 
 
+def test_c2_active_tests_reduce_support_and_certify() -> None:
+    task = active_curriculum(1)[0]
+    assert task.operation not in task.observation.split()
+    trace = active_test(task)
+    assert trace.support_reduced is True
+    assert len(trace.candidates_before) > len(trace.candidates_after) == 1
+
+    result = run_task_candidate(task.to_c0_task(trace.selected_operation), trace.selected_operation)
+    assert result.native_report["gate"]["passed"] is True
+
+    metrics = evaluate_c2(active_curriculum(1))
+    assert metrics.solve_rate == 1.0
+    assert metrics.support_reduction_rate == 1.0
+    assert metrics.mean_candidates_after == 1.0
+    assert metrics.to_dict()["verifier"]["evidence"]["source_coverage_rate"] == 1.0
+
+
 def test_all_curriculum_modules_have_runtime_metadata() -> None:
     specs = stages()
     assert [spec.name for spec in specs] == ["C0", "C1", "C2", "C3", "C4", "C5"]
     assert specs[0].executable is True
     assert specs[1].executable is True
+    assert specs[2].executable is True
     assert all(spec.implemented_components for spec in specs)
 
 
@@ -213,6 +233,19 @@ def test_cli_runs_c1_evaluation() -> None:
     assert payload["solve_rate"] == 1.0
     assert payload["tasks"] > 0
     assert payload["evidence"]["source_coverage_rate"] == 1.0
+
+
+def test_cli_runs_c2_evaluation() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "vpm", "eval-c2", "--limit", "1", "--json"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(completed.stdout)
+    assert payload["solve_rate"] == 1.0
+    assert payload["support_reduction_rate"] == 1.0
+    assert payload["mean_candidates_after"] == 1.0
 
 
 def test_cli_exposes_authority_rejection() -> None:
