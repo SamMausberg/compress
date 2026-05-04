@@ -21,4 +21,4 @@ def test_failure_report_serializes_scope_and_uncovered_clauses() -> None:
     payload = evaluate_failure_modes().to_dict()
     assert payload["passed"] is True
     assert payload["failures"] == []
-    assert "same-budget transformer/SSM/program-synthesis baselines" in payload["uncovered_clauses"]
+    assert "same-budget external LLM baseline" in payload["uncovered_clauses"]

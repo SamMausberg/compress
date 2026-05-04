@@ -26,7 +26,7 @@ class FailureMode(StrEnum):
 
 
 UNCOVERED_CRITERION1_CLAUSES = (
-    "same-budget transformer/SSM/program-synthesis baselines",
+    "same-budget external LLM baseline",
     "open-domain context and semantic ambiguity collapse",
     "source/rebuttal recall miss calibration under shift",
     "entailment false-support attacks outside controlled corpus",
