@@ -101,11 +101,11 @@ fn non_negative(value: f64) -> f64 {
     }
 }
 
-fn unit_open(value: f64) -> f64 {
-    if !value.is_finite() {
-        0.05
-    } else {
+const fn unit_open(value: f64) -> f64 {
+    if value.is_finite() {
         value.clamp(1.0e-12, 1.0)
+    } else {
+        0.05
     }
 }
 
@@ -117,10 +117,10 @@ mod tests {
     fn exact_replay_with_zero_gain_bound_has_tight_bounds() {
         let report =
             empirical_bernstein_bounds(&[0.75, 0.75, 0.75], 1, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0);
-        assert_eq!(report.mean_gain, 0.75);
-        assert_eq!(report.radius, 0.0);
-        assert_eq!(report.lcb, 0.75);
-        assert_eq!(report.ucb, 0.75);
+        assert!(close(report.mean_gain, 0.75));
+        assert!(close(report.radius, 0.0));
+        assert!(close(report.lcb, 0.75));
+        assert!(close(report.ucb, 0.75));
     }
 
     #[test]
@@ -130,5 +130,9 @@ mod tests {
         assert!(report.radius > 0.1);
         assert!(report.lcb < report.mean_gain);
         assert!(report.ucb > report.mean_gain);
+    }
+
+    fn close(left: f64, right: f64) -> bool {
+        (left - right).abs() <= f64::EPSILON
     }
 }
