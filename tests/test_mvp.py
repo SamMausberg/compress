@@ -7,11 +7,20 @@ import subprocess
 import sys
 
 from vpm import _native
-from vpm.evaluation import evaluate_c0
+from vpm.evaluation import evaluate_c0, evaluate_c1
 from vpm.infer import run_c0_add, run_task, run_task_candidate
 from vpm.memory import MemoryLibrary
-from vpm.tasks import arithmetic_task, concat_task, equality_task, multiplication_task, stages
-from vpm.training import allocate_budget
+from vpm.tasks import (
+    arithmetic_task,
+    as_c0_tasks,
+    concat_task,
+    equality_task,
+    hidden_schema_curriculum,
+    multiplication_task,
+    schema_split,
+    stages,
+)
+from vpm.training import allocate_budget, matched_baselines
 from vpm.verifiers import native_value_json
 
 
@@ -109,10 +118,40 @@ def test_evaluation_and_budget_are_connected() -> None:
     assert budget.verification == 0.4
 
 
+def test_c1_hidden_schema_tasks_bridge_to_verifier_and_baselines() -> None:
+    train, heldout = schema_split(2)
+    assert train
+    assert heldout
+    for task in heldout:
+        assert task.schema_id not in task.observation
+        assert task.operation not in task.observation.split()
+
+    exact = run_task_candidate(heldout[0].to_c0_task(), heldout[0].operation)
+    assert exact.rendered != "refusal"
+    assert exact.native_report["gate"]["passed"] is True
+    hidden = heldout[0].to_hidden_c0_task()
+    assert hidden.operation == "unknown"
+    assert hidden.left == heldout[0].left
+
+    baselines = {
+        baseline.name: baseline
+        for baseline in matched_baselines(as_c0_tasks(train), as_c0_tasks(heldout))
+    }
+    assert baselines["enumerative-full"].solve_rate == 1.0
+    assert baselines["enumerative-full"].mean_candidates > 1.0
+
+
+def test_c1_evaluation_runs_executable_hidden_schema_subset() -> None:
+    metrics = evaluate_c1(hidden_schema_curriculum(1))
+    assert metrics.solve_rate == 1.0
+    assert metrics.gate_violations == 0
+
+
 def test_all_curriculum_modules_have_runtime_metadata() -> None:
     specs = stages()
     assert [spec.name for spec in specs] == ["C0", "C1", "C2", "C3", "C4", "C5"]
     assert specs[0].executable is True
+    assert specs[1].executable is True
     assert all(spec.implemented_components for spec in specs)
 
 
@@ -144,6 +183,18 @@ def test_cli_runs_generic_text_task() -> None:
         text=True,
     )
     assert completed.stdout.startswith("abcd ")
+
+
+def test_cli_runs_c1_evaluation() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "vpm", "eval-c1", "--limit", "1", "--json"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(completed.stdout)
+    assert payload["solve_rate"] == 1.0
+    assert payload["tasks"] > 0
 
 
 def test_cli_exposes_authority_rejection() -> None:

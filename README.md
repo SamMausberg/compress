@@ -104,6 +104,7 @@ uv run vpm run-c0 eq 5 5 --json
 uv run vpm run-c0 add 2 3 --authority capability --json
 uv run vpm run-c0 add 2 3 --risk-privacy 0.1 --json
 uv run vpm eval-c0 --json
+uv run vpm eval-c1 --json
 uv run vpm train-c0 --epochs 80 --json
 uv run vpm eval-prototype --json
 uv run vpm infer-c0 mul 6 7 --json
@@ -137,6 +138,9 @@ either certifies or rejects that proposal.
 The `run-c0` command also exposes authority and componentwise-risk probes;
 even an exactly verified value is rendered as `refusal` and skipped by memory
 admission when the authority or risk gate fails.
+The C1 executable subset adds hidden-schema tasks whose observations carry
+only typed operands plus expected values; evaluation bridges them back through
+the same native C0 executor/verifier/gate.
 
 Python API:
 

@@ -26,8 +26,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm._reports import float_field, object_map
-from vpm.infer import InferenceResult, run_task
+from vpm.infer import InferenceResult, run_task, run_task_candidate
 from vpm.tasks.c0 import C0Task, curriculum
+from vpm.tasks.c1 import C1Task, hidden_schema_curriculum
 from vpm.verifiers import gate_passed
 
 
@@ -65,6 +66,13 @@ def evaluate_c0(tasks: list[C0Task] | None = None) -> EvaluationReport:
     return summarize(results)
 
 
+def evaluate_c1(tasks: list[C1Task] | None = None, limit: int = 3) -> EvaluationReport:
+    """Run the executable C1 hidden-schema subset through the verifier gate."""
+    cases = hidden_schema_curriculum(limit) if tasks is None else tasks
+    results = [run_task_candidate(task.to_c0_task(), task.operation) for task in cases]
+    return summarize(results)
+
+
 def summarize(results: list[InferenceResult]) -> EvaluationReport:
     """Summarize inference results using the MVP metric subset."""
     solved = sum(1 for result in results if gate_passed(result.native_report))
@@ -88,4 +96,4 @@ def certificate(report: dict[str, object]) -> float:
     return float_field(gate, "certificate_score")
 
 
-__all__ = ["EvaluationReport", "certificate", "evaluate_c0", "summarize"]
+__all__ = ["EvaluationReport", "certificate", "evaluate_c0", "evaluate_c1", "summarize"]

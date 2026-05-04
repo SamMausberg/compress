@@ -45,6 +45,7 @@ from vpm.tasks.c0 import (
     typed_task,
 )
 from vpm.tasks.c0 import stage_spec as c0_stage
+from vpm.tasks.c1 import C1Task, as_c0_tasks, hidden_schema_curriculum, schema_split
 from vpm.tasks.c1 import stage_spec as c1_stage
 from vpm.tasks.c2 import stage_spec as c2_stage
 from vpm.tasks.c3 import stage_spec as c3_stage
@@ -61,14 +62,18 @@ def stages() -> tuple[StageSpec, ...]:
 __all__ = [
     "C0Task",
     "C0Value",
+    "C1Task",
     "StageSpec",
     "addition_task",
     "arithmetic_task",
+    "as_c0_tasks",
     "concat_task",
     "curriculum",
     "equality_task",
+    "hidden_schema_curriculum",
     "hidden_task",
     "multiplication_task",
+    "schema_split",
     "stages",
     "typed_hidden_task",
     "typed_task",

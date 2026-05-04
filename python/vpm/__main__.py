@@ -15,7 +15,7 @@ from typing import Annotated
 import typer
 
 from . import __version__
-from .evaluation import evaluate_c0
+from .evaluation import evaluate_c0, evaluate_c1
 from .infer import run_c0_add, run_task
 from .substrate import load_prototype
 from .tasks import stages, typed_hidden_task, typed_task
@@ -91,6 +91,19 @@ def eval_c0_command(
 ) -> None:
     """Run the bundled C0 curriculum and summarize MVP metrics."""
     report = evaluate_c0()
+    if as_json:
+        typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    else:
+        typer.echo(f"solve_rate={report.solve_rate:.3f} tasks={report.tasks}")
+
+
+@app.command("eval-c1")
+def eval_c1_command(
+    limit: int = typer.Option(3, help="Absolute integer limit used for C1 generation."),
+    as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+) -> None:
+    """Run the executable C1 hidden-schema subset and summarize metrics."""
+    report = evaluate_c1(limit=limit)
     if as_json:
         typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
     else:

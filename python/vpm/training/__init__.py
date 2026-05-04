@@ -53,6 +53,7 @@ from vpm.training.prototype import (
     run_learned_task,
     train_c0_prototype,
 )
+from vpm.training.prototype_metrics import matched_baselines
 
 
 @dataclass(frozen=True)
@@ -98,6 +99,7 @@ __all__ = [
     "allocate_budget",
     "curriculum_split",
     "evaluate_saved_prototype",
+    "matched_baselines",
     "run_learned_task",
     "train_c0_prototype",
 ]
