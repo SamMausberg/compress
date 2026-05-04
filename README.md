@@ -141,6 +141,8 @@ admission when the authority or risk gate fails.
 The C1 executable subset adds hidden-schema tasks whose observations carry
 only typed operands plus expected values; evaluation bridges them back through
 the same native C0 executor/verifier/gate.
+`eval-c0 --json` and `eval-c1 --json` summarize source coverage, rebuttal
+clearance, and realization-loss rates in their `evidence` blocks.
 
 Python API:
 

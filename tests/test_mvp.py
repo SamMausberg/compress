@@ -115,6 +115,9 @@ def test_evaluation_and_budget_are_connected() -> None:
     metrics = evaluate_c0()
     budget = allocate_budget(metrics)
     assert metrics.solve_rate == 1.0
+    assert metrics.evidence.source_coverage_rate == 1.0
+    assert metrics.evidence.rebuttal_clear_rate == 1.0
+    assert metrics.evidence.realization_ok_rate == 1.0
     assert budget.verification == 0.4
 
 
@@ -145,6 +148,8 @@ def test_c1_evaluation_runs_executable_hidden_schema_subset() -> None:
     metrics = evaluate_c1(hidden_schema_curriculum(1))
     assert metrics.solve_rate == 1.0
     assert metrics.gate_violations == 0
+    assert metrics.evidence.mean_source_loss == 0.0
+    assert metrics.to_dict()["evidence"]["realization_ok_rate"] == 1.0
 
 
 def test_all_curriculum_modules_have_runtime_metadata() -> None:
@@ -195,6 +200,7 @@ def test_cli_runs_c1_evaluation() -> None:
     payload = json.loads(completed.stdout)
     assert payload["solve_rate"] == 1.0
     assert payload["tasks"] > 0
+    assert payload["evidence"]["source_coverage_rate"] == 1.0
 
 
 def test_cli_exposes_authority_rejection() -> None:

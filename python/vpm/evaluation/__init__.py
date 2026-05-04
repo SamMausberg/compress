@@ -33,6 +33,49 @@ from vpm.verifiers import gate_passed
 
 
 @dataclass(frozen=True)
+class EvidenceMetrics:
+    """Source/rebuttal/realization evidence coverage."""
+
+    tasks: int
+    source_covered: int
+    rebuttal_clear: int
+    realization_ok: int
+    mean_source_loss: float
+    mean_rebuttal_loss: float
+    mean_realization_loss: float
+
+    @property
+    def source_coverage_rate(self) -> float:
+        """Fraction of tasks with exact or retrieved source support."""
+        return self.source_covered / self.tasks if self.tasks else 0.0
+
+    @property
+    def rebuttal_clear_rate(self) -> float:
+        """Fraction of tasks with no material rebuttal loss."""
+        return self.rebuttal_clear / self.tasks if self.tasks else 0.0
+
+    @property
+    def realization_ok_rate(self) -> float:
+        """Fraction of tasks whose rendered atom round-trips exactly."""
+        return self.realization_ok / self.tasks if self.tasks else 0.0
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-friendly evidence metrics."""
+        return {
+            "tasks": self.tasks,
+            "source_covered": self.source_covered,
+            "source_coverage_rate": self.source_coverage_rate,
+            "rebuttal_clear": self.rebuttal_clear,
+            "rebuttal_clear_rate": self.rebuttal_clear_rate,
+            "realization_ok": self.realization_ok,
+            "realization_ok_rate": self.realization_ok_rate,
+            "mean_source_loss": self.mean_source_loss,
+            "mean_rebuttal_loss": self.mean_rebuttal_loss,
+            "mean_realization_loss": self.mean_realization_loss,
+        }
+
+
+@dataclass(frozen=True)
 class EvaluationReport:
     """Minimal Criterion-1-facing metrics for the executable kernel."""
 
@@ -41,6 +84,7 @@ class EvaluationReport:
     gate_violations: int
     mean_certificate: float
     active_memory_growth: int
+    evidence: EvidenceMetrics
 
     @property
     def solve_rate(self) -> float:
@@ -56,6 +100,7 @@ class EvaluationReport:
             "gate_violations": self.gate_violations,
             "mean_certificate": self.mean_certificate,
             "active_memory_growth": self.active_memory_growth,
+            "evidence": self.evidence.to_dict(),
         }
 
 
@@ -85,6 +130,43 @@ def summarize(results: list[InferenceResult]) -> EvaluationReport:
         ),
         mean_certificate=sum(scores) / len(scores) if scores else 0.0,
         active_memory_growth=sum(result.memory_active for result in results),
+        evidence=evidence_metrics(results),
+    )
+
+
+def evidence_metrics(results: list[InferenceResult]) -> EvidenceMetrics:
+    """Summarize source/rebuttal/realization losses from inference results."""
+    source_losses: list[float] = []
+    rebuttal_losses: list[float] = []
+    realization_losses: list[float] = []
+    source_covered = 0
+    rebuttal_clear = 0
+    realization_ok = 0
+    for result in results:
+        retrieval = result.retrieval
+        source_loss = retrieval.source_loss if retrieval else 1.0
+        rebuttal_loss = retrieval.rebuttal_loss if retrieval else 1.0
+        source_losses.append(source_loss)
+        rebuttal_losses.append(rebuttal_loss)
+        if retrieval and retrieval.sources and source_loss == 0.0:
+            source_covered += 1
+        if retrieval and not retrieval.rebuttals and rebuttal_loss == 0.0:
+            rebuttal_clear += 1
+
+        normal_form = result.compiled.normal_form if result.compiled else None
+        realization_loss = normal_form.realization_loss if normal_form else 1.0
+        realization_losses.append(realization_loss)
+        if realization_loss == 0.0:
+            realization_ok += 1
+
+    return EvidenceMetrics(
+        tasks=len(results),
+        source_covered=source_covered,
+        rebuttal_clear=rebuttal_clear,
+        realization_ok=realization_ok,
+        mean_source_loss=mean(source_losses),
+        mean_rebuttal_loss=mean(rebuttal_losses),
+        mean_realization_loss=mean(realization_losses),
     )
 
 
@@ -96,4 +178,17 @@ def certificate(report: dict[str, object]) -> float:
     return float_field(gate, "certificate_score")
 
 
-__all__ = ["EvaluationReport", "certificate", "evaluate_c0", "evaluate_c1", "summarize"]
+def mean(values: list[float]) -> float:
+    """Return a zero-safe arithmetic mean."""
+    return sum(values) / len(values) if values else 0.0
+
+
+__all__ = [
+    "EvaluationReport",
+    "EvidenceMetrics",
+    "certificate",
+    "evaluate_c0",
+    "evaluate_c1",
+    "evidence_metrics",
+    "summarize",
+]
