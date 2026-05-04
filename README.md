@@ -112,6 +112,7 @@ uv run vpm eval-c2 --json
 uv run vpm eval-c3 --json
 uv run vpm eval-c4 --json
 uv run vpm eval-c5 --json
+uv run vpm eval-failures --json
 uv run vpm train-c0 --epochs 80 --json
 uv run vpm eval-prototype --json
 uv run vpm train-c1 --epochs 80 --json
@@ -174,6 +175,9 @@ round-trip realization witnesses; contradicted answers are refused.
 The C5 executable subset adds replay-safe macro admission:
 `eval-c5 --json` admits only macros that certify every replay task, improve
 the candidate-cost frontier, and keep active memory growth sublinear.
+`eval-failures --json` runs the currently executable Criterion-1
+failure-mode detectors and lists the remaining Criterion-1 clauses that are
+not yet covered by the shipped C0-C5 subset.
 The example scripts mirror this: `examples/vpm0/run.py` prints runtime
 diagnostics plus C0 inference/evaluation, and `examples/vpm0/train.py`
 prints C0/C1 training reports, reloaded evaluations, learned inference, and

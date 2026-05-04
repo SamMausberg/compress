@@ -18,6 +18,7 @@ from . import __version__
 from ._cli import prototype_summary, training_summary
 from .diagnostics import collect_diagnostics
 from .evaluation import evaluate_c0, evaluate_c1, evaluate_c2, evaluate_c3, evaluate_c4, evaluate_c5
+from .evaluation.failure_modes import evaluate_failure_modes
 from .infer import run_c0_add, run_task
 from .substrate import load_prototype
 from .tasks import stages, typed_hidden_task, typed_task
@@ -206,6 +207,22 @@ def eval_c5_command(
             f"admission_rate={report.admission_rate:.3f} "
             f"demoted={report.demoted} "
             f"violations={report.violations}"
+        )
+
+
+@app.command("eval-failures")
+def eval_failures_command(
+    as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+) -> None:
+    """Run executable Criterion-1 failure-mode checks."""
+    report = evaluate_failure_modes()
+    if as_json:
+        typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    else:
+        typer.echo(
+            f"passed={report.passed} "
+            f"failures={len(report.failures)} "
+            f"uncovered={len(report.uncovered_clauses)}"
         )
 
 
