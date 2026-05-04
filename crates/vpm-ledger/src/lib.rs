@@ -126,7 +126,7 @@ impl LedgerDraft {
 }
 
 /// Append-only, content-addressed ledger.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Ledger {
     entries: Vec<LedgerEntry>,
     #[serde(skip)]

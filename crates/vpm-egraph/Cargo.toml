@@ -15,6 +15,7 @@ workspace = true
 [dependencies]
 vpm-core = { workspace = true }
 vpm-ledger = { workspace = true }
+vpm-dsl = { workspace = true }
 egg = { workspace = true }
 serde = { workspace = true }
 smallvec = { workspace = true }
