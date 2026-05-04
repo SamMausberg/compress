@@ -17,6 +17,7 @@ from vpm.evaluation import (
     evaluate_c5,
 )
 from vpm.evaluation.ablations import evaluate_ablations
+from vpm.evaluation.baselines import evaluate_baseline_suite
 from vpm.evaluation.failure_modes import evaluate_failure_modes
 from vpm.evaluation.red_team import red_team_replay
 
@@ -144,6 +145,21 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
         else:
             regressions = sum(result.expected_regression for result in report.results)
             typer.echo(f"passed={report.passed} regressions={regressions}")
+
+    @app.command("eval-baselines")
+    def eval_baselines_command(
+        limit: int = typer.Option(2, help="Absolute integer limit used for C1 splits."),
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Audit matched baseline availability and executable results."""
+        report = evaluate_baseline_suite(limit=limit)
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"ready_for_claims={report.ready_for_claims} "
+                f"missing={','.join(report.missing_families)}"
+            )
 
     @app.command("eval-red-team")
     def eval_red_team_command(
