@@ -45,6 +45,7 @@ from vpm.training.budget import BudgetChannel, BudgetPlan, allocate_budget_chann
 from vpm.training.coordinator import TrainingBlock, block_coordinate_plan
 from vpm.training.gflow import mechanism_reward, trajectory_balance_loss
 from vpm.training.losses import LOSS_NAMES, LossReport, loss_report
+from vpm.training.probes import CriticalEdgeProbe, edge_deletion_probe
 from vpm.training.prototype import (
     BaselineMetrics,
     CompressionMetrics,
@@ -110,6 +111,7 @@ __all__ = [
     "BudgetChannel",
     "BudgetPlan",
     "CompressionMetrics",
+    "CriticalEdgeProbe",
     "LossReport",
     "LossWeightState",
     "PrototypeEvalReport",
@@ -127,6 +129,7 @@ __all__ = [
     "balance_loss_weights",
     "block_coordinate_plan",
     "curriculum_split",
+    "edge_deletion_probe",
     "evaluate_saved_c1_prototype",
     "evaluate_saved_prototype",
     "loss_report",

@@ -22,6 +22,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm.compiler import CompiledProgram
+from vpm.substrate.encoder import (
+    TypedEvent,
+    TypedEventGraph,
+    encode_task_graph,
+    value_features,
+    value_kind,
+)
+from vpm.substrate.losses import SubstrateRecallReport, substrate_loss, substrate_recall_report
+from vpm.substrate.projection import ProjectionTrace, project_operation
 from vpm.substrate.prototype import (
     OPERATIONS,
     ArithmeticProposalNet,
@@ -30,6 +39,8 @@ from vpm.substrate.prototype import (
     predict_operation,
     save_prototype,
 )
+from vpm.substrate.slots import SlotBinding, bind_slots
+from vpm.substrate.ssm import SSMParameters, SSMState, run_selective_ssm
 
 
 @dataclass(frozen=True)
@@ -52,9 +63,24 @@ __all__ = [
     "OPERATIONS",
     "ArithmeticProposalNet",
     "OperationProposal",
+    "ProjectionTrace",
+    "SSMParameters",
+    "SSMState",
+    "SlotBinding",
+    "SubstrateRecallReport",
     "SubstrateState",
+    "TypedEvent",
+    "TypedEventGraph",
+    "bind_slots",
+    "encode_task_graph",
     "encode_update",
     "load_prototype",
     "predict_operation",
+    "project_operation",
+    "run_selective_ssm",
     "save_prototype",
+    "substrate_loss",
+    "substrate_recall_report",
+    "value_features",
+    "value_kind",
 ]
