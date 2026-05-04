@@ -109,6 +109,7 @@ uv run vpm run-c0 add 2 3 --risk-privacy 0.1 --json
 uv run vpm eval-c0 --json
 uv run vpm eval-c1 --json
 uv run vpm eval-c2 --json
+uv run vpm eval-c3 --json
 uv run vpm train-c0 --epochs 80 --json
 uv run vpm eval-prototype --json
 uv run vpm train-c1 --epochs 80 --json
@@ -160,6 +161,9 @@ clearance, and realization-loss rates in their `evidence` blocks.
 The C2 executable subset adds active tests for partial observations:
 `eval-c2 --json` shows candidate support before/after the active test and
 then routes the selected operation through the same verifier gate.
+The C3 executable subset adds adversarial authority/risk probes:
+`eval-c3 --json` checks that exactly verified actions are still rejected
+when labels or componentwise risk exceed the contract.
 The example scripts mirror this: `examples/vpm0/run.py` prints runtime
 diagnostics plus C0 inference/evaluation, and `examples/vpm0/train.py`
 prints C0/C1 training reports, reloaded evaluations, learned inference, and

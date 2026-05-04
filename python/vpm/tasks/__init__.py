@@ -49,6 +49,7 @@ from vpm.tasks.c1 import C1Task, as_c0_tasks, hidden_schema_curriculum, schema_s
 from vpm.tasks.c1 import stage_spec as c1_stage
 from vpm.tasks.c2 import ActiveTestTrace, C2Task, active_curriculum, active_test
 from vpm.tasks.c2 import stage_spec as c2_stage
+from vpm.tasks.c3 import C3PolicyProbe, policy_probe_curriculum
 from vpm.tasks.c3 import stage_spec as c3_stage
 from vpm.tasks.c4 import stage_spec as c4_stage
 from vpm.tasks.c5 import stage_spec as c5_stage
@@ -66,6 +67,7 @@ __all__ = [
     "C0Value",
     "C1Task",
     "C2Task",
+    "C3PolicyProbe",
     "StageSpec",
     "active_curriculum",
     "active_test",
@@ -78,6 +80,7 @@ __all__ = [
     "hidden_schema_curriculum",
     "hidden_task",
     "multiplication_task",
+    "policy_probe_curriculum",
     "schema_split",
     "stages",
     "typed_hidden_task",

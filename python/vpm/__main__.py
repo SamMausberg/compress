@@ -16,7 +16,7 @@ import typer
 
 from . import __version__
 from .diagnostics import collect_diagnostics
-from .evaluation import evaluate_c0, evaluate_c1, evaluate_c2
+from .evaluation import evaluate_c0, evaluate_c1, evaluate_c2, evaluate_c3
 from .infer import run_c0_add, run_task
 from .substrate import load_prototype
 from .tasks import stages, typed_hidden_task, typed_task
@@ -157,6 +157,22 @@ def eval_c2_command(
             f"solve_rate={report.solve_rate:.3f} "
             f"support_reduction={report.support_reduction_rate:.3f} "
             f"tasks={report.tasks}"
+        )
+
+
+@app.command("eval-c3")
+def eval_c3_command(
+    as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+) -> None:
+    """Run C3 adversarial authority/risk policy probes."""
+    report = evaluate_c3()
+    if as_json:
+        typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    else:
+        typer.echo(
+            f"violation_rate={report.violation_rate:.3f} "
+            f"rejected={report.rejected} "
+            f"probes={report.probes}"
         )
 
 

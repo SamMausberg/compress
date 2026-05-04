@@ -30,6 +30,7 @@ from vpm.infer import InferenceResult, run_task, run_task_candidate
 from vpm.tasks.c0 import C0Task, curriculum
 from vpm.tasks.c1 import C1Task, hidden_schema_curriculum
 from vpm.tasks.c2 import ActiveTestTrace, C2Task, active_curriculum, active_test
+from vpm.tasks.c3 import C3PolicyProbe, policy_probe_curriculum
 from vpm.verifiers import gate_passed
 
 
@@ -147,6 +148,66 @@ class ActiveEvaluationReport:
         }
 
 
+@dataclass(frozen=True)
+class PolicyGateTrace:
+    """One C3 policy probe outcome."""
+
+    probe_id: str
+    expected_pass: bool
+    gate_passed: bool
+    verification_passed: bool
+    memory_active: int
+    auth_ok: bool
+    risk_ok: bool
+    reasons: tuple[str, ...]
+
+    @property
+    def violation(self) -> bool:
+        """True when the gate result disagrees with the expected policy outcome."""
+        return self.gate_passed != self.expected_pass
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-friendly policy trace."""
+        return {
+            "probe_id": self.probe_id,
+            "expected_pass": self.expected_pass,
+            "gate_passed": self.gate_passed,
+            "verification_passed": self.verification_passed,
+            "memory_active": self.memory_active,
+            "auth_ok": self.auth_ok,
+            "risk_ok": self.risk_ok,
+            "reasons": self.reasons,
+            "violation": self.violation,
+        }
+
+
+@dataclass(frozen=True)
+class PolicyEvaluationReport:
+    """C3 authority/risk policy evaluation."""
+
+    probes: int
+    rejected: int
+    controls_passed: int
+    violations: int
+    traces: tuple[PolicyGateTrace, ...]
+
+    @property
+    def violation_rate(self) -> float:
+        """Fraction of probes whose gate outcome violated the expected policy."""
+        return self.violations / self.probes if self.probes else 0.0
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-friendly policy evaluation."""
+        return {
+            "probes": self.probes,
+            "rejected": self.rejected,
+            "controls_passed": self.controls_passed,
+            "violations": self.violations,
+            "violation_rate": self.violation_rate,
+            "traces": [trace.to_dict() for trace in self.traces],
+        }
+
+
 def evaluate_c0(tasks: list[C0Task] | None = None) -> EvaluationReport:
     """Run the C0 curriculum through the MVP inference loop."""
     cases = curriculum() if tasks is None else tasks
@@ -176,6 +237,19 @@ def evaluate_c2(
     return ActiveEvaluationReport(
         tasks=len(cases),
         verifier=summarize(results),
+        traces=traces,
+    )
+
+
+def evaluate_c3(probes: list[C3PolicyProbe] | None = None) -> PolicyEvaluationReport:
+    """Run adversarial authority/risk probes through the verifier gate."""
+    cases = policy_probe_curriculum() if probes is None else probes
+    traces = tuple(policy_gate_trace(probe) for probe in cases)
+    return PolicyEvaluationReport(
+        probes=len(traces),
+        rejected=sum(not trace.gate_passed for trace in traces),
+        controls_passed=sum(trace.gate_passed and trace.expected_pass for trace in traces),
+        violations=sum(trace.violation for trace in traces),
         traces=traces,
     )
 
@@ -232,6 +306,27 @@ def evidence_metrics(results: list[InferenceResult]) -> EvidenceMetrics:
     )
 
 
+def policy_gate_trace(probe: C3PolicyProbe) -> PolicyGateTrace:
+    """Run one C3 policy probe and summarize gate fields."""
+    result = run_task(probe.task, labels=probe.labels, risk=probe.risk)
+    gate = object_map(result.native_report.get("gate")) or {}
+    authority = object_map(gate.get("authority")) or {}
+    verification = object_map(result.native_report.get("verification")) or {}
+    reasons = gate.get("reasons")
+    return PolicyGateTrace(
+        probe_id=probe.task_id,
+        expected_pass=probe.expected_pass,
+        gate_passed=gate.get("passed") is True,
+        verification_passed=verification.get("passed") is True,
+        memory_active=result.memory_active,
+        auth_ok=authority.get("auth_ok") is True,
+        risk_ok=authority.get("risk_ok") is True,
+        reasons=tuple(reason for reason in reasons if isinstance(reason, str))
+        if isinstance(reasons, list)
+        else (),
+    )
+
+
 def certificate(report: dict[str, object]) -> float:
     """Read certificate score from a report."""
     gate = object_map(report.get("gate"))
@@ -249,10 +344,14 @@ __all__ = [
     "ActiveEvaluationReport",
     "EvaluationReport",
     "EvidenceMetrics",
+    "PolicyEvaluationReport",
+    "PolicyGateTrace",
     "certificate",
     "evaluate_c0",
     "evaluate_c1",
     "evaluate_c2",
+    "evaluate_c3",
     "evidence_metrics",
+    "policy_gate_trace",
     "summarize",
 ]
