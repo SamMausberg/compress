@@ -104,6 +104,7 @@ uv run vpm eval-prototype --json
 uv run vpm infer-c0 mul 6 7 --json
 uv run vpm stages
 uv run python examples/vpm0/run.py
+uv run python examples/vpm0/train.py
 uv run pytest -q
 ```
 
@@ -120,6 +121,24 @@ operations, writes an `artifacts/vpm_c0_prototype.npz` weight file, runs held-ou
 tasks through the native executor/verifier/gate, reports rejected proposals,
 and compares solve rate against one-candidate majority/add-only baselines plus
 an exact enumerative upper bound. Learned proposals never certify themselves.
+
+Python API:
+
+```python
+from pathlib import Path
+
+from vpm.tasks import arithmetic_task
+from vpm.training import TrainingConfig, run_learned_task, train_c0_prototype
+
+model, report = train_c0_prototype(
+    TrainingConfig(epochs=80, artifact=Path("artifacts/vpm_c0_prototype.npz"))
+)
+print(report.heldout.solve_rate, report.heldout.compression_ratio)
+
+inference = run_learned_task(model, arithmetic_task("mul", 6, 7))
+print(inference.proposal.to_dict())
+print(inference.result.to_dict()["native_report"]["gate"])
+```
 
 ## Note
 
