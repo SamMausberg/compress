@@ -129,7 +129,8 @@ and compares solve rate against one-candidate majority/add-only baselines plus
 an exact enumerative upper bound. Learned proposals never certify themselves.
 `eval-prototype --json` includes per-task traces with expected/proposed
 operations, pass/refusal status, gate reasons, errors, and admitted memory
-keys.
+keys, plus compression/frontier metrics for learned one-shot utility,
+active-memory growth, and movement against the enumerative baseline.
 The substrate input is operation-hidden: it sees typed operands plus the
 expected value, proposes an operation, and the native executor/verifier/gate
 either certifies or rejects that proposal.
@@ -148,7 +149,10 @@ from vpm.training import TrainingConfig, run_learned_task, train_c0_prototype
 model, report = train_c0_prototype(
     TrainingConfig(epochs=80, artifact=Path("artifacts/vpm_c0_prototype.npz"))
 )
-print(report.heldout.solve_rate, report.heldout.compression_ratio)
+print(
+    report.heldout.solve_rate,
+    report.heldout.compression.frontier_delta_vs_enumerative,
+)
 
 inference = run_learned_task(model, typed_hidden_task("ab", "cd", "abcd"))
 print(inference.proposal.to_dict())

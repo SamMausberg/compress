@@ -129,6 +129,7 @@ def train_c0_command(
                     f"solve_rate={heldout.solve_rate:.3f}",
                     f"op_acc={heldout.operation_accuracy:.3f}",
                     f"compression={heldout.compression_ratio:.3f}",
+                    f"frontier_delta={heldout.compression.frontier_delta_vs_enumerative:.3f}",
                     f"artifact={report.artifact}",
                 ]
             )
@@ -196,7 +197,8 @@ def eval_prototype_command(
         typer.echo(
             f"solve_rate={report.solve_rate:.3f} "
             f"op_acc={report.operation_accuracy:.3f} "
-            f"compression={report.compression_ratio:.3f}"
+            f"compression={report.compression_ratio:.3f} "
+            f"frontier_delta={report.compression.frontier_delta_vs_enumerative:.3f}"
         )
 
 

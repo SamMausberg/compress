@@ -25,6 +25,16 @@ def test_trainable_prototype_learns_and_stays_verifier_gated(tmp_path) -> None:
     assert report.heldout.operation_accuracy > baselines["majority"].operation_accuracy
     assert report.heldout.macro_memory_active >= 2
     assert report.heldout.compression_ratio > 1.0
+    enumerative = baselines["enumerative-full"]
+    enumerative_utility = enumerative.solve_rate / enumerative.mean_candidates
+    assert report.heldout.compression.learned_mean_candidates == 1.0
+    assert report.heldout.compression.certified_utility > enumerative_utility
+    assert report.heldout.compression.frontier_delta_vs_enumerative > 0.0
+    assert report.heldout.compression.sublinear_active_memory is True
+    assert (
+        report.heldout.to_dict()["compression"]["frontier_delta_vs_enumerative"]
+        == report.heldout.compression.frontier_delta_vs_enumerative
+    )
     assert any(trace.passed and trace.memory_key for trace in report.heldout.traces)
     assert any(not trace.passed for trace in report.heldout.traces)
 

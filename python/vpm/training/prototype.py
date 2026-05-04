@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -12,7 +11,6 @@ from torch import nn
 from vpm.infer import InferenceResult, run_task_candidate
 from vpm.memory import MemoryLibrary
 from vpm.substrate.prototype import (
-    OPERATIONS,
     ArithmeticProposalNet,
     OperationProposal,
     batch_tensors,
@@ -22,6 +20,12 @@ from vpm.substrate.prototype import (
     save_prototype,
 )
 from vpm.tasks.c0 import C0Task, arithmetic_task, concat_task, equality_task
+from vpm.training.prototype_metrics import (
+    BaselineMetrics,
+    CompressionMetrics,
+    compression_frontier_metrics,
+    matched_baselines,
+)
 from vpm.verifiers import gate_passed
 
 
@@ -36,25 +40,6 @@ class TrainingConfig:
     seed: int = 7
     device: str = "auto"
     artifact: Path | None = None
-
-
-@dataclass(frozen=True)
-class BaselineMetrics:
-    """Matched baseline result."""
-
-    name: str
-    solve_rate: float
-    operation_accuracy: float
-    mean_candidates: float
-
-    def to_dict(self) -> dict[str, float | str]:
-        """JSON-friendly baseline metrics."""
-        return {
-            "name": self.name,
-            "solve_rate": self.solve_rate,
-            "operation_accuracy": self.operation_accuracy,
-            "mean_candidates": self.mean_candidates,
-        }
 
 
 @dataclass(frozen=True)
@@ -95,6 +80,7 @@ class PrototypeEvalReport:
     mean_confidence: float
     macro_memory_active: int
     compression_ratio: float
+    compression: CompressionMetrics
     baselines: tuple[BaselineMetrics, ...]
     traces: tuple[PrototypeTrace, ...]
 
@@ -114,6 +100,7 @@ class PrototypeEvalReport:
             "mean_confidence": self.mean_confidence,
             "macro_memory_active": self.macro_memory_active,
             "compression_ratio": self.compression_ratio,
+            "compression": self.compression.to_dict(),
             "baselines": [baseline.to_dict() for baseline in self.baselines],
             "traces": [trace.to_dict() for trace in self.traces],
         }
@@ -257,16 +244,10 @@ def evaluate_prototype(
         )
 
     tasks = len(heldout_tasks)
-    baselines = (
-        fixed_budget_baseline("majority", majority_operation(train_tasks), heldout_tasks),
-        *(
-            fixed_budget_baseline(f"{operation}-only", operation, heldout_tasks)
-            for operation in OPERATIONS
-        ),
-        enumerative_baseline(heldout_tasks),
-    )
+    baselines = matched_baselines(train_tasks, heldout_tasks)
     macro_active = len(macro_memory.active)
     compression = certified / macro_active if macro_active else 0.0
+    compression_metrics = compression_frontier_metrics(tasks, certified, macro_active, baselines)
     return PrototypeEvalReport(
         tasks=tasks,
         certified=certified,
@@ -275,6 +256,7 @@ def evaluate_prototype(
         mean_confidence=confidence_sum / tasks if tasks else 0.0,
         macro_memory_active=macro_active,
         compression_ratio=compression,
+        compression=compression_metrics,
         baselines=baselines,
         traces=tuple(traces),
     )
@@ -340,41 +322,9 @@ def stable_task_key(task: C0Task) -> int:
     return sum((index + 1) * ord(char) for index, char in enumerate(raw))
 
 
-def majority_operation(tasks: list[C0Task]) -> str:
-    """Most frequent operation in a training split."""
-    counts = Counter(task.operation for task in tasks)
-    return counts.most_common(1)[0][0] if counts else "add"
-
-
-def fixed_budget_baseline(name: str, operation: str, tasks: list[C0Task]) -> BaselineMetrics:
-    """Evaluate a one-candidate operation baseline."""
-    certified = 0
-    correct = 0
-    for task in tasks:
-        result = run_task_candidate(task, operation)
-        certified += int(gate_passed(result.native_report))
-        correct += int(operation == task.operation)
-    total = len(tasks)
-    return BaselineMetrics(name, certified / total, correct / total, 1.0)
-
-
-def enumerative_baseline(tasks: list[C0Task]) -> BaselineMetrics:
-    """Evaluate exact search over the supported operation set."""
-    certified = 0
-    candidates = 0
-    for task in tasks:
-        for operation in OPERATIONS:
-            candidates += 1
-            result = run_task_candidate(task, operation)
-            if gate_passed(result.native_report):
-                certified += 1
-                break
-    total = len(tasks)
-    return BaselineMetrics("enumerative-full", certified / total, 1.0, candidates / total)
-
-
 __all__ = [
     "BaselineMetrics",
+    "CompressionMetrics",
     "PrototypeEvalReport",
     "PrototypeInference",
     "TrainingConfig",

@@ -42,6 +42,7 @@ from dataclasses import dataclass
 from vpm.evaluation import EvaluationReport
 from vpm.training.prototype import (
     BaselineMetrics,
+    CompressionMetrics,
     PrototypeEvalReport,
     PrototypeInference,
     PrototypeTrace,
@@ -88,6 +89,7 @@ def allocate_budget(report: EvaluationReport, total: float = 1.0) -> BudgetAlloc
 __all__ = [
     "BaselineMetrics",
     "BudgetAllocation",
+    "CompressionMetrics",
     "PrototypeEvalReport",
     "PrototypeInference",
     "PrototypeTrace",
