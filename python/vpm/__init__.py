@@ -26,4 +26,16 @@ above are thin, idiomatic wrappers around it.
 from __future__ import annotations
 
 __version__ = "0.0.0"
-__all__ = ["__version__"]
+
+from vpm.infer import InferenceResult, run_c0_add, run_task
+from vpm.tasks import C0Task, addition_task, curriculum
+
+__all__ = [
+    "C0Task",
+    "InferenceResult",
+    "__version__",
+    "addition_task",
+    "curriculum",
+    "run_c0_add",
+    "run_task",
+]

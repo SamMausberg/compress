@@ -37,4 +37,40 @@ remains elsewhere.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from dataclasses import dataclass
+
+from vpm.evaluation import EvaluationReport
+
+
+@dataclass(frozen=True)
+class BudgetAllocation:
+    """Dual-price budget allocation diagnostic for the MVP."""
+
+    execution: float
+    verification: float
+    retrieval: float
+    memory: float
+
+    def to_dict(self) -> dict[str, float]:
+        """JSON-friendly budget allocation."""
+        return {
+            "execution": self.execution,
+            "verification": self.verification,
+            "retrieval": self.retrieval,
+            "memory": self.memory,
+        }
+
+
+def allocate_budget(report: EvaluationReport, total: float = 1.0) -> BudgetAllocation:
+    """Allocate more budget to verification when the solve rate is weak."""
+    verification_share = 0.4 if report.solve_rate >= 1.0 else 0.6
+    remaining = total - verification_share
+    return BudgetAllocation(
+        execution=remaining * 0.45,
+        verification=verification_share,
+        retrieval=remaining * 0.25,
+        memory=remaining * 0.30,
+    )
+
+
+__all__ = ["BudgetAllocation", "allocate_budget"]

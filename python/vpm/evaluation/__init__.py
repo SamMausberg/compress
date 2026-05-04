@@ -23,4 +23,66 @@ This package will hold:
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from dataclasses import dataclass
+
+from vpm.infer import InferenceResult, run_task
+from vpm.tasks.c0 import C0Task, curriculum
+from vpm.verifiers import gate_passed
+
+
+@dataclass(frozen=True)
+class EvaluationReport:
+    """Minimal Criterion-1-facing metrics for the executable kernel."""
+
+    tasks: int
+    solved: int
+    gate_violations: int
+    mean_certificate: float
+    active_memory_growth: int
+
+    @property
+    def solve_rate(self) -> float:
+        """Solved fraction."""
+        return self.solved / self.tasks if self.tasks else 0.0
+
+    def to_dict(self) -> dict[str, float | int]:
+        """JSON-friendly metrics."""
+        return {
+            "tasks": self.tasks,
+            "solved": self.solved,
+            "solve_rate": self.solve_rate,
+            "gate_violations": self.gate_violations,
+            "mean_certificate": self.mean_certificate,
+            "active_memory_growth": self.active_memory_growth,
+        }
+
+
+def evaluate_c0(tasks: list[C0Task] | None = None) -> EvaluationReport:
+    """Run the C0 curriculum through the MVP inference loop."""
+    cases = curriculum() if tasks is None else tasks
+    results = [run_task(task) for task in cases]
+    return summarize(results)
+
+
+def summarize(results: list[InferenceResult]) -> EvaluationReport:
+    """Summarize inference results using the MVP metric subset."""
+    solved = sum(1 for result in results if gate_passed(result.native_report))
+    scores = [certificate(result.native_report) for result in results]
+    return EvaluationReport(
+        tasks=len(results),
+        solved=solved,
+        gate_violations=sum(1 for result in results if result.route == "solve" and not result.rendered),
+        mean_certificate=sum(scores) / len(scores) if scores else 0.0,
+        active_memory_growth=sum(result.memory_active for result in results),
+    )
+
+
+def certificate(report: dict[str, object]) -> float:
+    """Read certificate score from a report."""
+    gate = report.get("gate")
+    if not isinstance(gate, dict):
+        return 0.0
+    return float(gate.get("certificate_score", 0.0))
+
+
+__all__ = ["EvaluationReport", "certificate", "evaluate_c0", "summarize"]

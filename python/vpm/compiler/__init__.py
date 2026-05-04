@@ -20,4 +20,50 @@ both delegated to ``crates/vpm-egraph``.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from dataclasses import dataclass
+
+from vpm.language import NormalForm, normalize
+from vpm.tasks.c0 import C0Task
+
+
+@dataclass(frozen=True)
+class CompiledProgram:
+    """Posterior-selected executable candidate for the MVP."""
+
+    task_id: str
+    operation: str
+    left: int
+    right: int
+    expected: int
+    normal_form: NormalForm
+    support_loss: float = 0.0
+
+    @property
+    def args(self) -> tuple[int, int]:
+        """Typed program arguments."""
+        return (self.left, self.right)
+
+
+def cnf_posterior(task: C0Task | str) -> NormalForm:
+    """Produce the C0 conversation normal form posterior."""
+    observation = task.observation if isinstance(task, C0Task) else task
+    return normalize(observation)
+
+
+def compile_task(task: C0Task) -> CompiledProgram:
+    """Compile a C0 task into the executable native program boundary."""
+    normal_form = cnf_posterior(task)
+    if not normal_form.ok:
+        msg = normal_form.ask or "task is not in the C0 executable language"
+        raise ValueError(msg)
+    return CompiledProgram(
+        task_id=task.task_id,
+        operation=task.operation,
+        left=task.left,
+        right=task.right,
+        expected=task.expected,
+        normal_form=normal_form,
+    )
+
+
+__all__ = ["CompiledProgram", "cnf_posterior", "compile_task"]

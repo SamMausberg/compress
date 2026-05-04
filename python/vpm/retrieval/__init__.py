@@ -20,4 +20,26 @@ execution and proof verifiers in :mod:`vpm.verifiers` /
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from dataclasses import dataclass
+
+from vpm.compiler import CompiledProgram
+
+
+@dataclass(frozen=True)
+class RetrievalBundle:
+    """Source/rebuttal retrieval result with calibrated loss bounds."""
+
+    sources: tuple[str, ...]
+    rebuttals: tuple[str, ...]
+    source_loss: float
+    rebuttal_loss: float
+
+
+def retrieve(compiled: CompiledProgram) -> RetrievalBundle:
+    """Retrieve exact internal support for C0 executable objects."""
+    atom = compiled.normal_form.atoms[0]
+    source = f"exact-arithmetic:{atom}"
+    return RetrievalBundle((source,), (), 0.0, 0.0)
+
+
+__all__ = ["RetrievalBundle", "retrieve"]

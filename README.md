@@ -86,6 +86,29 @@ Early research and implementation.
 
 The focus right now is on designing the base architecture, defining the training process, and building the first minimal prototype.
 
+## MVP vertical slice
+
+The repo includes a runnable VPM-0 kernel for cheap-verifier C0 tasks. It
+connects the Rust core model, ledger, DSL executor, canonicalization witness,
+authority/risk gate, verifier kernel, Python compiler/retrieval/substrate
+proposal/memory/inference/evaluation modules, CLI, example, and tests.
+
+```bash
+cargo test --workspace
+uv run maturin develop
+uv run vpm run-c0-add 2 3
+uv run vpm run-c0-add 2 3 --json
+uv run vpm eval-c0 --json
+uv run python examples/vpm0/run.py
+uv run pytest -q
+```
+
+The implemented C0 path is intentionally small: `add left right` is compiled
+to typed bytecode, canonicalized with an auditable witness stack, executed into
+the ledger/trace DAG, verified by an exact primitive verifier, gated by
+certificate/route/authority/risk checks, rendered only after the gate passes,
+and admitted to active memory with its report.
+
 ## Note
 
 The project is called `compress` because I think compression is central to intelligence.

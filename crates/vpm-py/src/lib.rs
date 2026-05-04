@@ -21,7 +21,10 @@
 //! state (slot bindings, e-graph hash-cons, dependence blocks) stays in
 //! Rust.
 
-use pyo3::prelude::*;
+use pyo3::{exceptions::PyValueError, prelude::*};
+use vpm_core::{Contract, Value};
+use vpm_dsl::c0_add_program;
+use vpm_verify::run_program;
 
 /// The `vpm._native` Python extension module.
 ///
@@ -37,6 +40,8 @@ fn vpm_py_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
         "VPM-5.3 native core (Rust). See docs/architecture/.",
     )?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    m.add_function(wrap_pyfunction!(c0_contract_json, m)?)?;
+    m.add_function(wrap_pyfunction!(run_c0_add_json, m)?)?;
 
     register_submodule(
         m,
@@ -75,6 +80,24 @@ fn vpm_py_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
         "Verifier registry, e-values, falsifier, gates — see vpm_verify.",
     )?;
     Ok(())
+}
+
+/// Return the default C0 contract as JSON.
+#[pyfunction]
+fn c0_contract_json() -> PyResult<String> {
+    serde_json::to_string_pretty(&Contract::c0()).map_err(json_error)
+}
+
+/// Run the Rust C0 add → canonicalize → execute → verify → gate flow.
+#[pyfunction]
+fn run_c0_add_json(left: i64, right: i64, expected: i64) -> PyResult<String> {
+    let program = c0_add_program(left, right);
+    let report = run_program(&program, Value::Int(expected)).map_err(PyValueError::new_err)?;
+    serde_json::to_string_pretty(&report).map_err(json_error)
+}
+
+fn json_error(error: serde_json::Error) -> PyErr {
+    PyValueError::new_err(error.to_string())
 }
 
 fn register_submodule(

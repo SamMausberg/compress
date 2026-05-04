@@ -19,4 +19,25 @@ output of this module is a *proposal* and never a certificate.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from dataclasses import dataclass
+
+from vpm.compiler import CompiledProgram
+
+
+@dataclass(frozen=True)
+class SubstrateState:
+    """Substrate proposal state for a substrate-free MVP run."""
+
+    events: tuple[str, ...]
+    slots: tuple[str, ...]
+    omission_loss: float
+
+
+def encode_update(compiled: CompiledProgram) -> SubstrateState:
+    """Encode a typed event without giving it certificate authority."""
+    event = f"{compiled.operation}:{compiled.left}:{compiled.right}"
+    slot = f"result:{compiled.expected}"
+    return SubstrateState((event,), (slot,), 0.0)
+
+
+__all__ = ["SubstrateState", "encode_update"]

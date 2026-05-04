@@ -26,4 +26,31 @@ Rust side.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+import json
+from typing import cast
+
+from vpm import _native
+from vpm.compiler import CompiledProgram
+
+
+def native_c0_report(compiled: CompiledProgram) -> dict[str, object]:
+    """Run the native exact verifier/gate path for a compiled C0 task."""
+    raw = _native.run_c0_add_json(compiled.left, compiled.right, compiled.expected)
+    return cast(dict[str, object], json.loads(raw))
+
+
+def certificate_score(report: dict[str, object]) -> float:
+    """Read the gate certificate score from a native report."""
+    gate = report.get("gate")
+    if not isinstance(gate, dict):
+        return 0.0
+    return float(gate.get("certificate_score", 0.0))
+
+
+def gate_passed(report: dict[str, object]) -> bool:
+    """True when the native conjunctive gate passed."""
+    gate = report.get("gate")
+    return isinstance(gate, dict) and gate.get("passed") is True
+
+
+__all__ = ["certificate_score", "gate_passed", "native_c0_report"]

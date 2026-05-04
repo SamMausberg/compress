@@ -19,3 +19,6 @@ dsl: ModuleType
 egraph: ModuleType
 authority: ModuleType
 verify: ModuleType
+
+def c0_contract_json() -> str: ...
+def run_c0_add_json(left: int, right: int, expected: int) -> str: ...

@@ -31,4 +31,6 @@ in adversarial suites.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from vpm.tasks.c0 import C0Task, addition_task, curriculum
+
+__all__ = ["C0Task", "addition_task", "curriculum"]
