@@ -189,6 +189,13 @@ not yet covered by the shipped C0-C5 subset.
 `eval-ablations --json` turns off key controls and verifies that the expected
 regressions appear; `eval-red-team --json` combines those ablations with the
 failure-mode suite for the M6 replay harness.
+`eval-baselines --json` audits matched-baseline availability: executable VPM
+and program-synthesis baselines run locally, while transformer, SSM, and LLM
+baselines are reported as `not_configured` unless their JSON reports are
+provided through `VPM_TRANSFORMER_BASELINE_JSON`, `VPM_SSM_BASELINE_JSON`,
+and `VPM_LLM_BASELINE_JSON`.
+`eval-phase --json` reports the C5 compression phase transition and
+saturation diagnostic over frontier lower-confidence bounds.
 The example scripts mirror this: `examples/vpm0/run.py` prints runtime
 diagnostics plus C0 inference/evaluation, and `examples/vpm0/train.py`
 prints C0/C1 training reports, reloaded evaluations, learned inference, and
