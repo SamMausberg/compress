@@ -14,7 +14,7 @@ from vpm.tasks.c0 import C0Task, C0Value
 
 OPERATIONS = ("add", "mul", "concat", "eq")
 VALUE_KINDS = ("int", "text", "bool")
-FEATURES = len(OPERATIONS) + len(VALUE_KINDS) + 3
+FEATURES = len(VALUE_KINDS) + 3
 
 
 @dataclass(frozen=True)
@@ -52,28 +52,27 @@ class ArithmeticProposalNet(nn.Module):
 
 
 def event_tensor(task: C0Task, scale: float, device: torch.device) -> torch.Tensor:
-    """Encode one typed C0 task as operation/argument events."""
+    """Encode one typed C0 task without leaking the operation label."""
     events = torch.zeros((3, FEATURES), dtype=torch.float32, device=device)
-    events[0, operation_index(task.operation)] = 1.0
-    fill_value_features(events[1], task.left, scale)
-    fill_value_features(events[2], task.right, scale)
+    fill_value_features(events[0], task.left, scale)
+    fill_value_features(events[1], task.right, scale)
+    fill_value_features(events[2], task.expected, scale)
     return events
 
 
 def fill_value_features(row: torch.Tensor, value: C0Value, scale: float) -> None:
     """Fill one operand row with type and compact value features."""
-    type_offset = len(OPERATIONS)
-    scalar_offset = type_offset + len(VALUE_KINDS)
+    scalar_offset = len(VALUE_KINDS)
     if isinstance(value, bool):
-        row[type_offset + VALUE_KINDS.index("bool")] = 1.0
+        row[VALUE_KINDS.index("bool")] = 1.0
         row[scalar_offset] = 1.0 if value else 0.0
         return
     if isinstance(value, int):
-        row[type_offset + VALUE_KINDS.index("int")] = 1.0
+        row[VALUE_KINDS.index("int")] = 1.0
         row[scalar_offset] = abs(float(value)) / scale
         row[scalar_offset + 1] = -1.0 if value < 0 else 1.0
         return
-    row[type_offset + VALUE_KINDS.index("text")] = 1.0
+    row[VALUE_KINDS.index("text")] = 1.0
     row[scalar_offset] = len(value) / scale
     row[scalar_offset + 2] = stable_text_feature(value)
 

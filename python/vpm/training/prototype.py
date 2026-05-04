@@ -322,8 +322,9 @@ def typed_curriculum(numbers: list[int], text_values: list[str]) -> list[C0Task]
     tasks: list[C0Task] = []
     for left in numbers:
         for right in numbers:
-            tasks.append(arithmetic_task("add", left, right))
-            tasks.append(arithmetic_task("mul", left, right))
+            if left + right != left * right:
+                tasks.append(arithmetic_task("add", left, right))
+                tasks.append(arithmetic_task("mul", left, right))
             tasks.append(equality_task(left, right))
     for left in text_values:
         for right in text_values:

@@ -105,6 +105,7 @@ uv run vpm eval-c0 --json
 uv run vpm train-c0 --epochs 80 --json
 uv run vpm eval-prototype --json
 uv run vpm infer-c0 mul 6 7 --json
+uv run vpm infer-c0-auto ab cd abcd --json
 uv run vpm stages
 uv run python examples/vpm0/run.py
 uv run python examples/vpm0/train.py
@@ -127,13 +128,16 @@ an exact enumerative upper bound. Learned proposals never certify themselves.
 `eval-prototype --json` includes per-task traces with expected/proposed
 operations, pass/refusal status, gate reasons, errors, and admitted memory
 keys.
+The substrate input is operation-hidden: it sees typed operands plus the
+expected value, proposes an operation, and the native executor/verifier/gate
+either certifies or rejects that proposal.
 
 Python API:
 
 ```python
 from pathlib import Path
 
-from vpm.tasks import typed_task
+from vpm.tasks import typed_hidden_task
 from vpm.training import TrainingConfig, run_learned_task, train_c0_prototype
 
 model, report = train_c0_prototype(
@@ -141,7 +145,7 @@ model, report = train_c0_prototype(
 )
 print(report.heldout.solve_rate, report.heldout.compression_ratio)
 
-inference = run_learned_task(model, typed_task("concat", "ab", "cd"))
+inference = run_learned_task(model, typed_hidden_task("ab", "cd", "abcd"))
 print(inference.proposal.to_dict())
 print(inference.result.to_dict()["native_report"]["gate"])
 ```

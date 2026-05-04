@@ -39,7 +39,9 @@ from vpm.tasks.c0 import (
     concat_task,
     curriculum,
     equality_task,
+    hidden_task,
     multiplication_task,
+    typed_hidden_task,
     typed_task,
 )
 from vpm.tasks.c0 import stage_spec as c0_stage
@@ -65,7 +67,9 @@ __all__ = [
     "concat_task",
     "curriculum",
     "equality_task",
+    "hidden_task",
     "multiplication_task",
     "stages",
+    "typed_hidden_task",
     "typed_task",
 ]

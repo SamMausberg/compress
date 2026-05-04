@@ -36,8 +36,10 @@ from vpm.tasks import (
     concat_task,
     curriculum,
     equality_task,
+    hidden_task,
     multiplication_task,
     stages,
+    typed_hidden_task,
     typed_task,
 )
 from vpm.training import TrainingConfig, TrainingReport, train_c0_prototype
@@ -54,10 +56,12 @@ __all__ = [
     "concat_task",
     "curriculum",
     "equality_task",
+    "hidden_task",
     "multiplication_task",
     "run_c0_add",
     "run_task",
     "stages",
     "train_c0_prototype",
+    "typed_hidden_task",
     "typed_task",
 ]

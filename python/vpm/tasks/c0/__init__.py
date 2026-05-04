@@ -80,6 +80,17 @@ def equality_task(left: C0Value, right: C0Value, expected: bool | None = None) -
     )
 
 
+def hidden_task(left: C0Value, right: C0Value, expected: C0Value) -> C0Task:
+    """Build an operation-hidden task for learned proposal inference."""
+    return C0Task(
+        task_id=f"c0-hidden-{value_token(left)}-{value_token(right)}-{value_token(expected)}",
+        left=left,
+        right=right,
+        expected=expected,
+        operation="unknown",
+    )
+
+
 def arithmetic_task(operation: str, left: int, right: int, expected: int | None = None) -> C0Task:
     """Build a supported C0 arithmetic task."""
     if operation == "add":
@@ -107,6 +118,11 @@ def typed_task(
         parsed_expected = None if expected is None else parse_bool(expected)
         return equality_task(parsed_left, parsed_right, parsed_expected)
     raise ValueError(f"unsupported C0 typed operation: {operation}")
+
+
+def typed_hidden_task(left: str, right: str, expected: str) -> C0Task:
+    """Build an operation-hidden task from CLI-friendly typed tokens."""
+    return hidden_task(parse_token(left), parse_token(right), parse_token(expected))
 
 
 def curriculum() -> list[C0Task]:
@@ -175,7 +191,9 @@ __all__ = [
     "concat_task",
     "curriculum",
     "equality_task",
+    "hidden_task",
     "multiplication_task",
     "stage_spec",
+    "typed_hidden_task",
     "typed_task",
 ]

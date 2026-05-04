@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from vpm.tasks import C0Task
+from vpm.tasks import C0Task, typed_hidden_task
 from vpm.training import (
     TrainingConfig,
     curriculum_split,
@@ -37,6 +37,11 @@ def test_trainable_prototype_learns_and_stays_verifier_gated(tmp_path) -> None:
     assert inference.proposal.operation == task.operation
     assert gate_passed(inference.result.native_report)
     assert inference.result.rendered.startswith(f"{task.expected} ")
+
+    hidden = typed_hidden_task(str(task.left), str(task.right), str(task.expected))
+    hidden_inference = run_learned_task(model, hidden)
+    assert hidden_inference.proposal.operation == task.operation
+    assert gate_passed(hidden_inference.result.native_report)
 
 
 def first_certified_exact(model, tasks: list[C0Task]):
