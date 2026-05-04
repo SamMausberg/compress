@@ -27,6 +27,7 @@ from vpm.evaluation.red_team import red_team_replay
 from vpm.evaluation.saturation import evaluate_saturation
 from vpm.retrieval.calibration import evaluate_recall_shift
 from vpm.verifiers.dependence import evaluate_dependence_shift
+from vpm.verifiers.entailment import evaluate_entailment_attacks
 
 
 def register_eval_commands(app: typer.Typer) -> None:
@@ -126,6 +127,13 @@ def register_curriculum_eval_commands(app: typer.Typer) -> None:
 
 def register_meta_eval_commands(app: typer.Typer) -> None:
     """Register failure, ablation, and red-team evaluation commands."""
+    register_failure_eval_commands(app)
+    register_calibration_eval_commands(app)
+    register_red_team_eval_commands(app)
+
+
+def register_failure_eval_commands(app: typer.Typer) -> None:
+    """Register failure-mode and ablation evaluation commands."""
 
     @app.command("eval-failures")
     def eval_failures_command(
@@ -153,6 +161,10 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
         else:
             regressions = sum(result.expected_regression for result in report.results)
             typer.echo(f"passed={report.passed} regressions={regressions}")
+
+
+def register_calibration_eval_commands(app: typer.Typer) -> None:
+    """Register calibrated guard evaluation commands."""
 
     @app.command("eval-recall-shift")
     def eval_recall_shift_command(
@@ -199,6 +211,25 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
                 f"violations={len(report.violations)} "
                 f"external_inference={len(report.external_inference_dependencies)}"
             )
+
+    @app.command("eval-entailment-attacks")
+    def eval_entailment_attacks_command(
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Run held-out entailment false-support attacks."""
+        report = evaluate_entailment_attacks()
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"passed={report.passed} "
+                f"false_support={len(report.false_support_attacks)} "
+                f"caught={len(report.caught_false_support)}"
+            )
+
+
+def register_red_team_eval_commands(app: typer.Typer) -> None:
+    """Register red-team replay evaluation commands."""
 
     @app.command("eval-red-team")
     def eval_red_team_command(

@@ -29,11 +29,10 @@ Rust side.
 from __future__ import annotations
 
 import json
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from vpm import _native
 from vpm._reports import float_field, object_map
-from vpm.compiler import CompiledProgram
 from vpm.verifiers.dependence import (
     DependenceBlockTrace,
     DependenceCalibrationReport,
@@ -42,6 +41,18 @@ from vpm.verifiers.dependence import (
     dirty_dependence_shift_probe,
     evaluate_dependence_shift,
 )
+from vpm.verifiers.entailment import (
+    EntailmentAttackReport,
+    EntailmentAttackTrace,
+    EntailmentProbe,
+    EvidenceClaim,
+    dirty_entailment_attack_probe,
+    entails_atom,
+    evaluate_entailment_attacks,
+)
+
+if TYPE_CHECKING:
+    from vpm.compiler import CompiledProgram
 
 RiskMap = dict[str, float]
 
@@ -108,11 +119,18 @@ __all__ = [
     "DependenceBlockTrace",
     "DependenceCalibrationReport",
     "DependenceSignal",
+    "EntailmentAttackReport",
+    "EntailmentAttackTrace",
+    "EntailmentProbe",
+    "EvidenceClaim",
     "RiskMap",
     "certificate_score",
     "dependence_shift_curriculum",
     "dirty_dependence_shift_probe",
+    "dirty_entailment_attack_probe",
+    "entails_atom",
     "evaluate_dependence_shift",
+    "evaluate_entailment_attacks",
     "gate_passed",
     "native_c0_report",
     "native_value_json",

@@ -17,6 +17,7 @@ from vpm.tasks.c0 import arithmetic_task
 from vpm.training.probes import edge_deletion_probe
 from vpm.training.splits import SplitAssignment
 from vpm.verifiers.dependence import dirty_dependence_shift_probe, evaluate_dependence_shift
+from vpm.verifiers.entailment import dirty_entailment_attack_probe, evaluate_entailment_attacks
 
 
 class FailureMode(StrEnum):
@@ -30,6 +31,7 @@ class FailureMode(StrEnum):
     DEPENDENCE_RESIDUALIZATION_BYPASS = "dependence_residualization_bypass"
     HIDDEN_COMPUTE_BYPASS = "hidden_compute_bypass"
     EXTERNAL_LLM_DEPENDENCE = "external_llm_dependence"
+    ENTAILMENT_FALSE_SUPPORT_BYPASS = "entailment_false_support_bypass"
     SAFETY_GATE_BYPASS = "safety_gate_bypass"
     DIALOGUE_GATE_BYPASS = "dialogue_gate_bypass"
     OPAQUE_MACRO_ADMISSION = "opaque_macro_admission"
@@ -39,7 +41,6 @@ class FailureMode(StrEnum):
 UNCOVERED_CRITERION1_CLAUSES = (
     "same-budget external LLM baseline",
     "open-domain context and semantic ambiguity collapse",
-    "entailment false-support attacks outside controlled corpus",
 )
 
 
@@ -114,6 +115,8 @@ def evaluate_failure_modes() -> FailureModeReport:
     dirty_dependence_shift = dirty_dependence_shift_probe()
     external_components = evaluate_external_components()
     dirty_external_components = dirty_external_component_probe()
+    entailment_attacks = evaluate_entailment_attacks()
+    dirty_entailment_attacks = dirty_entailment_attack_probe()
     compute = evaluate_compute_accounting()
     hidden_compute = hidden_compute_probe()
     return FailureModeReport(
@@ -176,6 +179,15 @@ def evaluate_failure_modes() -> FailureModeReport:
                     f"external_inference="
                     f"{len(external_components.external_inference_dependencies)} "
                     f"dirty_passed={dirty_external_components.passed}"
+                ),
+            ),
+            FailureCheck(
+                FailureMode.ENTAILMENT_FALSE_SUPPORT_BYPASS,
+                not entailment_attacks.passed or dirty_entailment_attacks.passed,
+                (
+                    f"false_support={len(entailment_attacks.false_support_attacks)} "
+                    f"caught={len(entailment_attacks.caught_false_support)} "
+                    f"dirty_passed={dirty_entailment_attacks.passed}"
                 ),
             ),
             FailureCheck(

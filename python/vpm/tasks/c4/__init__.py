@@ -17,6 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm.tasks.spec import StageSpec
+from vpm.verifiers.entailment import entails_atom
 
 
 @dataclass(frozen=True)
@@ -102,7 +103,7 @@ def gate_dialogue(task: C4DialogueTask) -> DialogueGateTrace:
     rebuttal_ok = not any(
         source_entails_other(rebuttal, task.answer) for rebuttal in task.rebuttals
     )
-    entailment_ok = source_ok and task.answer in task.evidence_text
+    entailment_ok = any(entails_atom(task.atom, task.answer, source) for source in task.sources)
     rendered_candidate = render_dialogue_answer(task)
     realization_ok = recover_answer(rendered_candidate) == task.answer
     reasons = dialogue_reasons(source_ok, rebuttal_ok, entailment_ok, realization_ok)
