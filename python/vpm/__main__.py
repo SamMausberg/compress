@@ -202,6 +202,16 @@ def infer_c0_command(
     left: str,
     right: str,
     expected: str | None = None,
+    authority: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--authority",
+            help="Authority label to request; repeat for multiple labels.",
+        ),
+    ] = None,
+    risk_privacy: float = typer.Option(0.0, help="Privacy risk charge."),
+    risk_capability: float = typer.Option(0.0, help="Capability risk charge."),
+    risk_impact: float = typer.Option(0.0, help="Impact risk charge."),
     artifact: Annotated[
         Path,
         typer.Option(help="NPZ artifact path from train-c0."),
@@ -211,7 +221,16 @@ def infer_c0_command(
 ) -> None:
     """Run one C0 task through a learned proposal and verifier gate."""
     model = load_prototype(artifact, device)
-    payload = run_learned_task(model, typed_task(operation, left, right, expected))
+    payload = run_learned_task(
+        model,
+        typed_task(operation, left, right, expected),
+        labels=tuple(authority or ["data"]),
+        risk={
+            "privacy": risk_privacy,
+            "capability": risk_capability,
+            "impact": risk_impact,
+        },
+    )
     if as_json:
         typer.echo(json.dumps(payload.to_dict(), indent=2, sort_keys=True))
     else:
@@ -223,6 +242,16 @@ def infer_c0_auto_command(
     left: str,
     right: str,
     expected: str,
+    authority: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--authority",
+            help="Authority label to request; repeat for multiple labels.",
+        ),
+    ] = None,
+    risk_privacy: float = typer.Option(0.0, help="Privacy risk charge."),
+    risk_capability: float = typer.Option(0.0, help="Capability risk charge."),
+    risk_impact: float = typer.Option(0.0, help="Impact risk charge."),
     artifact: Annotated[
         Path,
         typer.Option(help="NPZ artifact path from train-c0."),
@@ -232,7 +261,16 @@ def infer_c0_auto_command(
 ) -> None:
     """Infer the C0 operation from operands plus expected value, then verify it."""
     model = load_prototype(artifact, device)
-    payload = run_learned_task(model, typed_hidden_task(left, right, expected))
+    payload = run_learned_task(
+        model,
+        typed_hidden_task(left, right, expected),
+        labels=tuple(authority or ["data"]),
+        risk={
+            "privacy": risk_privacy,
+            "capability": risk_capability,
+            "impact": risk_impact,
+        },
+    )
     if as_json:
         typer.echo(json.dumps(payload.to_dict(), indent=2, sort_keys=True))
     else:

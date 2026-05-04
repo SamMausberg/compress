@@ -111,6 +111,8 @@ uv run vpm train-c1 --epochs 80 --json
 uv run vpm eval-c1-prototype --json
 uv run vpm infer-c0 mul 6 7 --json
 uv run vpm infer-c0-auto ab cd abcd --json
+uv run vpm infer-c0-auto ab cd abcd --authority capability --json
+uv run vpm infer-c0-auto ab cd abcd --risk-privacy 0.1 --json
 uv run vpm stages
 uv run python examples/vpm0/run.py
 uv run python examples/vpm0/train.py
@@ -140,6 +142,9 @@ either certifies or rejects that proposal.
 The `run-c0` command also exposes authority and componentwise-risk probes;
 even an exactly verified value is rendered as `refusal` and skipped by memory
 admission when the authority or risk gate fails.
+The learned `infer-c0` and `infer-c0-auto` commands expose the same
+authority and componentwise-risk probes after proposal but before rendering or
+memory admission.
 The C1 executable subset adds hidden-schema tasks whose observations carry
 only typed operands plus expected values; evaluation bridges them back through
 the same native C0 executor/verifier/gate.

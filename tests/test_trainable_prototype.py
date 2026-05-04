@@ -55,6 +55,20 @@ def test_trainable_prototype_learns_and_stays_verifier_gated(tmp_path) -> None:
     assert hidden_inference.proposal.operation == task.operation
     assert gate_passed(hidden_inference.result.native_report)
 
+    authority_rejected = run_learned_task(model, task, labels=("capability",))
+    assert authority_rejected.proposal.operation == task.operation
+    assert authority_rejected.result.native_report["verification"]["passed"] is True
+    assert authority_rejected.result.native_report["gate"]["passed"] is False
+    assert authority_rejected.result.native_report["gate"]["authority"]["auth_ok"] is False
+    assert authority_rejected.result.rendered == "refusal"
+    assert authority_rejected.result.memory_active == 0
+
+    risk_rejected = run_learned_task(model, hidden, risk={"privacy": 0.1})
+    assert risk_rejected.proposal.operation == task.operation
+    assert risk_rejected.result.native_report["verification"]["passed"] is True
+    assert risk_rejected.result.native_report["gate"]["authority"]["risk_ok"] is False
+    assert risk_rejected.result.rendered == "refusal"
+
 
 def test_c1_hidden_schema_prototype_trains_against_matched_baselines(tmp_path) -> None:
     artifact = tmp_path / "c1-prototype.npz"

@@ -27,7 +27,7 @@ from vpm.training.prototype_metrics import (
     compression_frontier_metrics,
     matched_baselines,
 )
-from vpm.verifiers import gate_passed
+from vpm.verifiers import RiskMap, gate_passed
 
 
 @dataclass(frozen=True)
@@ -240,10 +240,18 @@ def evaluate_saved_c1_prototype(
     )
 
 
-def run_learned_task(model: ArithmeticProposalNet, task: C0Task) -> PrototypeInference:
+def run_learned_task(
+    model: ArithmeticProposalNet,
+    task: C0Task,
+    labels: tuple[str, ...] = ("data",),
+    risk: RiskMap | None = None,
+) -> PrototypeInference:
     """Run one task using the learned operation proposal."""
     proposal = predict_operation(model, task)
-    return PrototypeInference(proposal, run_task_candidate(task, proposal.operation))
+    return PrototypeInference(
+        proposal,
+        run_task_candidate(task, proposal.operation, labels=labels, risk=risk),
+    )
 
 
 def evaluate_prototype(
