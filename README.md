@@ -99,6 +99,7 @@ uv run maturin develop
 uv run vpm run-c0-add 2 3
 uv run vpm run-c0-add 2 3 --json
 uv run vpm eval-c0 --json
+uv run vpm stages
 uv run python examples/vpm0/run.py
 uv run pytest -q
 ```

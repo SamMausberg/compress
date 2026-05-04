@@ -15,6 +15,7 @@ import typer
 from . import __version__
 from .evaluation import evaluate_c0
 from .infer import run_c0_add
+from .tasks import stages
 
 app = typer.Typer(
     name="vpm",
@@ -54,6 +55,12 @@ def eval_c0_command(
         typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
     else:
         typer.echo(f"solve_rate={report.solve_rate:.3f} tasks={report.tasks}")
+
+
+@app.command("stages")
+def stages_command() -> None:
+    """Print curriculum-stage implementation metadata."""
+    typer.echo(json.dumps([stage.to_dict() for stage in stages()], indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

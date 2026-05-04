@@ -28,7 +28,7 @@ from __future__ import annotations
 __version__ = "0.0.0"
 
 from vpm.infer import InferenceResult, run_c0_add, run_task
-from vpm.tasks import C0Task, addition_task, curriculum
+from vpm.tasks import C0Task, addition_task, curriculum, stages
 
 __all__ = [
     "C0Task",
@@ -38,4 +38,5 @@ __all__ = [
     "curriculum",
     "run_c0_add",
     "run_task",
+    "stages",
 ]

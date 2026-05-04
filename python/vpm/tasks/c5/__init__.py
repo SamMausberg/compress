@@ -14,4 +14,18 @@ valid and false-pass bounds do not rise.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from vpm.tasks.spec import StageSpec
+
+
+def stage_spec() -> StageSpec:
+    """Runtime metadata for the C5 curriculum stage."""
+    return StageSpec(
+        name="C5",
+        summary="continual compression and replay-safe macro admission",
+        executable=False,
+        implemented_components=("memory-library", "canonicalization-witnesses", "stage-metadata"),
+        blockers=("frontier movement estimator", "macro demotion replay"),
+    )
+
+
+__all__ = ["stage_spec"]

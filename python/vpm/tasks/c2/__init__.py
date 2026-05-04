@@ -12,4 +12,18 @@ held-out trajectories.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from vpm.tasks.spec import StageSpec
+
+
+def stage_spec() -> StageSpec:
+    """Runtime metadata for the C2 curriculum stage."""
+    return StageSpec(
+        name="C2",
+        summary="partial observations, active tests, causal worlds",
+        executable=False,
+        implemented_components=("stage-metadata",),
+        blockers=("active-test selector", "support guard calibration"),
+    )
+
+
+__all__ = ["stage_spec"]

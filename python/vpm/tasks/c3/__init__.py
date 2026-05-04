@@ -14,4 +14,18 @@ gated coordinate they're applicable to (eqs. 111–112); ``Gate(a, Z, Γ)``
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from vpm.tasks.spec import StageSpec
+
+
+def stage_spec() -> StageSpec:
+    """Runtime metadata for the C3 curriculum stage."""
+    return StageSpec(
+        name="C3",
+        summary="tools, authority, declassification, adversarial channels",
+        executable=False,
+        implemented_components=("authority-lattice", "risk-gate", "stage-metadata"),
+        blockers=("tool sandbox runner", "rollback-credit ledger"),
+    )
+
+
+__all__ = ["stage_spec"]

@@ -14,6 +14,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from vpm.tasks.spec import StageSpec
+
 
 @dataclass(frozen=True)
 class C0Task:
@@ -46,4 +48,14 @@ def curriculum() -> list[C0Task]:
     ]
 
 
-__all__ = ["C0Task", "addition_task", "curriculum"]
+def stage_spec() -> StageSpec:
+    """Runtime metadata for the executable C0 stage."""
+    return StageSpec(
+        name="C0",
+        summary="cheap-verifier executable arithmetic/data tasks",
+        executable=True,
+        implemented_components=("compiler", "dsl", "ledger", "verifier", "gate", "memory"),
+    )
+
+
+__all__ = ["C0Task", "addition_task", "curriculum", "stage_spec"]

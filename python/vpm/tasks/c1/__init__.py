@@ -12,4 +12,18 @@ baselines (Criterion 1, §9, first clause).
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from vpm.tasks.spec import StageSpec
+
+
+def stage_spec() -> StageSpec:
+    """Runtime metadata for the C1 curriculum stage."""
+    return StageSpec(
+        name="C1",
+        summary="hidden-schema/equality-saturation tasks",
+        executable=False,
+        implemented_components=("stage-metadata",),
+        blockers=("hidden-schema generators", "same-budget baselines"),
+    )
+
+
+__all__ = ["stage_spec"]

@@ -14,4 +14,18 @@ entailment + source + rebuttal + round-trip witnesses.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from vpm.tasks.spec import StageSpec
+
+
+def stage_spec() -> StageSpec:
+    """Runtime metadata for the C4 curriculum stage."""
+    return StageSpec(
+        name="C4",
+        summary="controlled dialogue, grounded QA, realization gates",
+        executable=False,
+        implemented_components=("normal-form-parser", "renderer", "stage-metadata"),
+        blockers=("source corpus", "entailment checker", "round-trip checker"),
+    )
+
+
+__all__ = ["stage_spec"]

@@ -32,5 +32,18 @@ in adversarial suites.
 from __future__ import annotations
 
 from vpm.tasks.c0 import C0Task, addition_task, curriculum
+from vpm.tasks.c0 import stage_spec as c0_stage
+from vpm.tasks.c1 import stage_spec as c1_stage
+from vpm.tasks.c2 import stage_spec as c2_stage
+from vpm.tasks.c3 import stage_spec as c3_stage
+from vpm.tasks.c4 import stage_spec as c4_stage
+from vpm.tasks.c5 import stage_spec as c5_stage
+from vpm.tasks.spec import StageSpec
 
-__all__ = ["C0Task", "addition_task", "curriculum"]
+
+def stages() -> tuple[StageSpec, ...]:
+    """Return runtime-visible metadata for every curriculum package."""
+    return (c0_stage(), c1_stage(), c2_stage(), c3_stage(), c4_stage(), c5_stage())
+
+
+__all__ = ["C0Task", "StageSpec", "addition_task", "curriculum", "stages"]
