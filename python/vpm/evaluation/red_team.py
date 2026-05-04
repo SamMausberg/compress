@@ -1,0 +1,37 @@
+"""M6 red-team replay harness."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from vpm.evaluation.ablations import AblationReport, evaluate_ablations
+from vpm.evaluation.failure_modes import FailureModeReport, evaluate_failure_modes
+
+
+@dataclass(frozen=True)
+class RedTeamReport:
+    """Combined failure-mode and ablation replay report."""
+
+    failures: FailureModeReport
+    ablations: AblationReport
+
+    @property
+    def passed(self) -> bool:
+        """True when failure modes are unfired and ablations regress."""
+        return self.failures.passed and self.ablations.passed
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-friendly red-team report."""
+        return {
+            "passed": self.passed,
+            "failures": self.failures.to_dict(),
+            "ablations": self.ablations.to_dict(),
+        }
+
+
+def red_team_replay() -> RedTeamReport:
+    """Run M6 executable red-team replay."""
+    return RedTeamReport(failures=evaluate_failure_modes(), ablations=evaluate_ablations())
+
+
+__all__ = ["RedTeamReport", "red_team_replay"]
