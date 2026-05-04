@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+title: "compress: A reference implementation of VPM-5.3"
+message: "If you use this software, please cite the architecture document and this repository."
+type: software
+authors:
+  - family-names: Mausberg
+    given-names: Sam
+license: Apache-2.0
+version: 0.0.0
+date-released: 2026-05-03
+repository-code: "https://example.invalid/compress"
+keywords:
+  - non-transformer
+  - compression
+  - structured-memory
+  - verifier-native
+  - continual-learning
+  - mechanism-formation
+references:
+  - type: report
+    title: "VPM-5.3: Verifier-Native Compressive Predictive Mechanisms"
+    authors:
+      - family-names: Mausberg
+        given-names: Sam
+    year: 2026
+    month: 5

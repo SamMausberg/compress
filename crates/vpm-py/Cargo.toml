@@ -1,0 +1,31 @@
+[package]
+name = "vpm-py"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+readme.workspace = true
+description = "PyO3 bindings — exposes the VPM-5.3 Rust core to Python as `vpm._native`."
+
+[lib]
+name = "vpm_native"
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+vpm-core = { workspace = true }
+vpm-ledger = { workspace = true }
+vpm-dsl = { workspace = true }
+vpm-egraph = { workspace = true }
+vpm-authority = { workspace = true }
+vpm-verify = { workspace = true }
+pyo3 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

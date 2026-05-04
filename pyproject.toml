@@ -1,0 +1,211 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "vpm"
+version = "0.0.0"
+description = "Reference implementation of VPM-5.3: Verifier-Native Compressive Predictive Mechanisms."
+readme = "README.md"
+requires-python = ">=3.13"
+license = { file = "LICENSE" }
+authors = [{ name = "Sam Mausberg" }]
+keywords = [
+  "non-transformer",
+  "compression",
+  "structured-memory",
+  "verifier-native",
+  "continual-learning",
+  "mechanism-formation",
+]
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Rust",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Typing :: Typed",
+]
+
+dependencies = [
+  "torch>=2.6",
+  "numpy>=2.1",
+  "scipy>=1.14",
+  "einops>=0.8",
+  "pydantic>=2.9",
+  "rich>=13.9",
+  "typer>=0.13",
+  "networkx>=3.4",
+]
+
+[project.optional-dependencies]
+ssm = ["mamba-ssm>=2.2"]
+viz = ["matplotlib>=3.9", "plotly>=5.24"]
+retrieve = ["faiss-cpu>=1.9", "sentence-transformers>=3.3"]
+all = [
+  "vpm[ssm]",
+  "vpm[viz]",
+  "vpm[retrieve]",
+]
+
+[project.scripts]
+vpm = "vpm.__main__:app"
+
+[project.urls]
+Homepage = "https://example.invalid/compress"
+Documentation = "https://example.invalid/compress"
+Repository = "https://example.invalid/compress"
+Changelog = "https://example.invalid/compress/blob/main/CHANGELOG.md"
+
+# ---------------------------------------------------------------------------
+# Maturin: build the PyO3 extension and ship the mixed Python+Rust package.
+# ---------------------------------------------------------------------------
+[tool.maturin]
+manifest-path = "crates/vpm-py/Cargo.toml"
+module-name = "vpm._native"
+python-source = "python"
+features = ["pyo3/extension-module"]
+strip = true
+
+# ---------------------------------------------------------------------------
+# uv (resolver + lockfile + dev tooling).
+# ---------------------------------------------------------------------------
+[tool.uv]
+package = true
+
+[dependency-groups]
+dev = [
+  "ruff>=0.8",
+  "pyright>=1.1.390",
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "pytest-benchmark>=5.1",
+  "hypothesis>=6.115",
+  "pre-commit>=4.0",
+  "maturin>=1.7",
+  "typos>=1.27",
+]
+docs = [
+  "mkdocs-material>=9.5",
+  "mkdocs-katex>=0.0.2",
+  "mkdocstrings[python]>=0.27",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff (lint + format).
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["python"]
+extend-exclude = ["site", "target", ".venv"]
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "W",          # pycodestyle / pyflakes
+  "I",                     # isort
+  "N",                     # pep8-naming
+  "UP",                    # pyupgrade
+  "B",                     # flake8-bugbear
+  "C4",                    # comprehensions
+  "SIM",                   # simplify
+  "PT",                    # pytest style
+  "RET",                   # return
+  "RUF",                   # ruff-specific
+  "TID",                   # tidy imports
+  "ARG",                   # unused arguments
+  "PL",                    # pylint
+  "TRY",                   # tryceratops
+  "PERF",                  # perflint
+  "FURB",                  # refurb
+]
+ignore = [
+  "E501",                  # line length (formatter handles it)
+  "PLR0913",               # too many arguments — research code routinely needs them
+  "PLR0911",               # too many returns — same
+  "PLR2004",               # magic numbers — same
+  "TRY003",                # long exception messages
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR", "ARG", "S101"]
+"examples/**" = ["PLR", "ARG"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ---------------------------------------------------------------------------
+# Pyright (type checking).
+# ---------------------------------------------------------------------------
+[tool.pyright]
+include = ["python"]
+exclude = ["**/__pycache__", "**/.pytest_cache", "site", "target"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+reportMissingImports = "error"
+reportMissingTypeStubs = "warning"
+reportUnknownMemberType = "warning"
+reportUnknownVariableType = "warning"
+useLibraryCodeForTypes = true
+stubPath = "python"
+
+# ---------------------------------------------------------------------------
+# Pytest.
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.3"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
+  "--showlocals",
+]
+markers = [
+  "slow: marks tests as slow",
+  "gpu: requires a CUDA device",
+  "integration: end-to-end tests",
+]
+filterwarnings = [
+  "error",
+  "ignore::DeprecationWarning:torch.*",
+  "ignore::UserWarning:torch.*",
+]
+
+# ---------------------------------------------------------------------------
+# Coverage.
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["python/vpm"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "raise NotImplementedError",
+  "if TYPE_CHECKING:",
+  "@overload",
+]
+show_missing = true
+skip_covered = false
+
+# ---------------------------------------------------------------------------
+# Typos.
+# ---------------------------------------------------------------------------
+[tool.typos.default]
+extend-words = { "VPM" = "VPM", "VNS" = "VNS" }
+
+[tool.typos.files]
+extend-exclude = [
+  "*.pdf",
+  "Cargo.lock",
+  "uv.lock",
+  "site/**",
+  "target/**",
+]

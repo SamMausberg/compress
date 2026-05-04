@@ -1,0 +1,108 @@
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Test / coverage
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+.benchmarks/
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Type checkers
+.mypy_cache/
+.pyre/
+.pytype/
+.dmypy.json
+dmypy.json
+.pyright/
+
+# Linters / formatters
+.ruff_cache/
+
+# Environments
+.venv/
+.venv*/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+.python-version.local
+
+# uv
+.uv/
+
+# --- Rust ------------------------------------------------------------------
+target/
+**/target/
+*.pdb
+Cargo.lock.bak
+
+# --- Maturin / PyO3 --------------------------------------------------------
+*.dylib
+*.dll
+
+# --- Docs ------------------------------------------------------------------
+site/
+.docs-build/
+
+# --- Editors / OS ----------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- Project --------------------------------------------------------------
+# Datasets, checkpoints, logs, traces
+data/
+checkpoints/
+runs/
+logs/
+wandb/
+mlruns/
+outputs/
+*.ckpt
+*.pt
+*.safetensors
+
+# Ad-hoc scratch
+scratch/
+TODO.local.md
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Local secrets
+.env
+.env.*
+!.env.example

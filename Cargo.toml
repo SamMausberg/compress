@@ -1,0 +1,90 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/vpm-core",
+  "crates/vpm-ledger",
+  "crates/vpm-dsl",
+  "crates/vpm-egraph",
+  "crates/vpm-authority",
+  "crates/vpm-verify",
+  "crates/vpm-py",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.85"
+license = "Apache-2.0"
+repository = "https://example.invalid/compress"
+authors = ["Sam Mausberg"]
+readme = "README.md"
+
+[workspace.dependencies]
+# Internal crates
+vpm-core = { path = "crates/vpm-core", version = "0.0.0" }
+vpm-ledger = { path = "crates/vpm-ledger", version = "0.0.0" }
+vpm-dsl = { path = "crates/vpm-dsl", version = "0.0.0" }
+vpm-egraph = { path = "crates/vpm-egraph", version = "0.0.0" }
+vpm-authority = { path = "crates/vpm-authority", version = "0.0.0" }
+vpm-verify = { path = "crates/vpm-verify", version = "0.0.0" }
+
+# External
+egg = "0.10"
+pyo3 = { version = "0.23", features = ["extension-module", "abi3-py313"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bincode = "2"
+parking_lot = "0.12"
+dashmap = "6"
+smallvec = { version = "1", features = ["serde", "union"] }
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+blake3 = "1"
+bitvec = "1"
+roaring = "0.10"
+petgraph = "0.6"
+
+# Dev
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1"
+insta = { version = "1", features = ["yaml", "json"] }
+
+[workspace.lints.rust]
+unsafe_code = "warn"
+missing_docs = "warn"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+# Pragmatic relaxations for a research codebase.
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+similar_names = "allow"
+too_many_arguments = "allow"
+needless_pass_by_value = "allow"
+cast_precision_loss = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+opt-level = 3
+debug = "line-tables-only"
+strip = "debuginfo"
+
+[profile.bench]
+inherits = "release"
+debug = true
+
+[profile.dev]
+opt-level = 0
+
+[profile.test]
+opt-level = 1

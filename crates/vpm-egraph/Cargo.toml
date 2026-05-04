@@ -1,0 +1,28 @@
+[package]
+name = "vpm-egraph"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+readme.workspace = true
+description = "E-graph / equality saturation for VPM-5.3, wrapping `egg`."
+
+[lints]
+workspace = true
+
+[dependencies]
+vpm-core = { workspace = true }
+vpm-ledger = { workspace = true }
+egg = { workspace = true }
+serde = { workspace = true }
+smallvec = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+blake3 = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+insta = { workspace = true }
+criterion = { workspace = true }

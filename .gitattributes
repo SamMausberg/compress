@@ -1,0 +1,25 @@
+# Auto-detect text files and normalize line endings
+* text=auto eol=lf
+
+# Binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pt binary
+*.ckpt binary
+*.safetensors binary
+*.bin binary
+*.npz binary
+
+# Notebooks: union merge to reduce conflict noise; keep them line-stable
+*.ipynb merge=union
+
+# Lockfiles: linguist-generated for diff stats
+uv.lock linguist-generated=true
+Cargo.lock linguist-generated=true
+
+# Generated docs site
+site/** linguist-generated=true

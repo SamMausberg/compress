@@ -1,0 +1,83 @@
+site_name: "compress — VPM-5.3"
+site_description: "Reference implementation of VPM-5.3: Verifier-Native Compressive Predictive Mechanisms."
+site_url: "https://example.invalid/compress"
+repo_url: "https://example.invalid/compress"
+edit_uri: "edit/main/docs/"
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+plugins:
+  - search
+
+nav:
+  - Home: README.md
+  - Architecture:
+      - Overview: architecture/README.md
+      - "Abstract": architecture/00-abstract.md
+      - "§1 Contract, ledger, invariants": architecture/01-contract-ledger-invariants.md
+      - "§2 Typed mechanisms and calibrated evidence": architecture/02-typed-mechanisms-evidence.md
+      - "§3 Verifier-native neural substrate": architecture/03-neural-substrate.md
+      - "§4 Natural-language contractization": architecture/04-natural-language.md
+      - "§5 Compiler, posterior, inference": architecture/05-compiler-posterior.md
+      - "§6 Verification, falsification, authority, rendering": architecture/06-verification-authority.md
+      - "§7 Compression, memory, capacity": architecture/07-compression-memory.md
+      - "§8 Training system": architecture/08-training-system.md
+      - "§9 Evaluation, failure, minimal implementation": architecture/09-evaluation-failure.md
+      - "Appendix A — Compact inference procedure": architecture/A-inference-procedure.md
+      - "Appendix B — Executable sanity conditions": architecture/B-sanity-conditions.md
+  - Glossary: glossary.md
+  - References: references.md
+  - Implementation: implementation/README.md

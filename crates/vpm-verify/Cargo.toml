@@ -1,0 +1,35 @@
+[package]
+name = "vpm-verify"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+readme.workspace = true
+description = "Verifier registry, e-value runtime, falsifier, and gate kernel for VPM-5.3."
+
+[lints]
+workspace = true
+
+[dependencies]
+vpm-core = { workspace = true }
+vpm-ledger = { workspace = true }
+vpm-authority = { workspace = true }
+vpm-dsl = { workspace = true }
+vpm-egraph = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+smallvec = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+blake3 = { workspace = true }
+roaring = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+insta = { workspace = true }
+criterion = { workspace = true }
