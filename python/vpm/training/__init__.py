@@ -56,6 +56,13 @@ from vpm.training.prototype import (
     train_c1_prototype,
 )
 from vpm.training.prototype_metrics import matched_baselines
+from vpm.training.splits import SplitAssignment, split_report
+from vpm.training.teacher import (
+    TeacherPosterior,
+    TeacherPosteriorEntry,
+    TeacherTrace,
+    teacher_posterior,
+)
 
 
 @dataclass(frozen=True)
@@ -96,6 +103,10 @@ __all__ = [
     "PrototypeEvalReport",
     "PrototypeInference",
     "PrototypeTrace",
+    "SplitAssignment",
+    "TeacherPosterior",
+    "TeacherPosteriorEntry",
+    "TeacherTrace",
     "TrainingConfig",
     "TrainingReport",
     "allocate_budget",
@@ -104,6 +115,8 @@ __all__ = [
     "evaluate_saved_prototype",
     "matched_baselines",
     "run_learned_task",
+    "split_report",
+    "teacher_posterior",
     "train_c0_prototype",
     "train_c1_prototype",
 ]
