@@ -147,7 +147,7 @@ def dialogue_reasons(
     realization_ok: bool,
 ) -> tuple[str, ...]:
     """Collect failed dialogue-gate reasons."""
-    reasons = []
+    reasons: list[str] = []
     if not source_ok:
         reasons.append("source witness missing")
     if not rebuttal_ok:

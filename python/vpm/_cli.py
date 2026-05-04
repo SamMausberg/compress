@@ -2,8 +2,37 @@
 
 from __future__ import annotations
 
+from typing import Protocol
 
-def prototype_summary(report) -> str:
+
+class _CompressionLike(Protocol):
+    @property
+    def frontier_delta_vs_enumerative(self) -> float: ...
+
+
+class PrototypeSummaryReport(Protocol):
+    @property
+    def solve_rate(self) -> float: ...
+
+    @property
+    def operation_accuracy(self) -> float: ...
+
+    @property
+    def compression_ratio(self) -> float: ...
+
+    @property
+    def compression(self) -> _CompressionLike: ...
+
+
+class TrainingSummaryReport(Protocol):
+    @property
+    def heldout(self) -> PrototypeSummaryReport: ...
+
+    @property
+    def artifact(self) -> str | None: ...
+
+
+def prototype_summary(report: PrototypeSummaryReport) -> str:
     """Compact summary for prototype evaluation reports."""
     return (
         f"solve_rate={report.solve_rate:.3f} "
@@ -13,9 +42,14 @@ def prototype_summary(report) -> str:
     )
 
 
-def training_summary(report) -> str:
+def training_summary(report: TrainingSummaryReport) -> str:
     """Compact summary for training reports."""
     return f"{prototype_summary(report.heldout)} artifact={report.artifact}"
 
 
-__all__ = ["prototype_summary", "training_summary"]
+__all__ = [
+    "PrototypeSummaryReport",
+    "TrainingSummaryReport",
+    "prototype_summary",
+    "training_summary",
+]

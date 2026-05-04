@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 import torch
 from torch import nn
 
+from vpm._reports import object_list, object_map
 from vpm.infer import InferenceResult, run_task_candidate
 from vpm.memory import MemoryLibrary
 from vpm.substrate.prototype import (
@@ -28,6 +30,9 @@ from vpm.training.prototype_metrics import (
     matched_baselines,
 )
 from vpm.verifiers import RiskMap, gate_passed
+
+type TorchDevice = Any
+_TORCH = cast(Any, torch)
 
 
 @dataclass(frozen=True)
@@ -180,13 +185,13 @@ def train_prototype_split(
     scale: float,
 ) -> tuple[ArithmeticProposalNet, TrainingReport]:
     """Train a recurrent substrate proposal model on a prepared split."""
-    torch.manual_seed(cfg.seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(cfg.seed)
+    _TORCH.manual_seed(cfg.seed)
+    if _TORCH.cuda.is_available():
+        _TORCH.cuda.manual_seed_all(cfg.seed)
     device = resolve_device(cfg.device)
     model = ArithmeticProposalNet(cfg.hidden_dim, scale=scale).to(device)
     events, labels = batch_tensors(train_tasks, model.scale, device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.learning_rate)
+    optimizer = _TORCH.optim.AdamW(model.parameters(), lr=cfg.learning_rate)
     loss_fn = nn.CrossEntropyLoss()
 
     initial_loss = float(loss_fn(model(events), labels).item())
@@ -258,7 +263,7 @@ def evaluate_prototype(
     model: ArithmeticProposalNet,
     train_tasks: list[C0Task],
     heldout_tasks: list[C0Task],
-    device: torch.device,
+    device: TorchDevice,
 ) -> PrototypeEvalReport:
     """Evaluate learned proposals against verifier-gated held-out tasks."""
     macro_memory = MemoryLibrary()
@@ -311,11 +316,11 @@ def evaluate_prototype(
 
 def gate_reasons(report: dict[str, object]) -> tuple[str, ...]:
     """Extract gate reasons from a native report."""
-    gate = report.get("gate")
-    if not isinstance(gate, dict):
+    gate = object_map(report.get("gate"))
+    if gate is None:
         return ()
-    reasons = gate.get("reasons")
-    if not isinstance(reasons, list):
+    reasons = object_list(gate.get("reasons"))
+    if reasons is None:
         return ()
     return tuple(reason for reason in reasons if isinstance(reason, str))
 
@@ -323,7 +328,7 @@ def gate_reasons(report: dict[str, object]) -> tuple[str, ...]:
 def operation_accuracy(
     model: ArithmeticProposalNet,
     tasks: list[C0Task],
-    device: torch.device,
+    device: TorchDevice,
 ) -> float:
     """Return operation prediction accuracy."""
     if not tasks:

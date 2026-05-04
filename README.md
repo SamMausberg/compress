@@ -161,8 +161,10 @@ compression/frontier metrics, and verifier-gated traces.
 `eval-c0 --json` and `eval-c1 --json` summarize source coverage, rebuttal
 clearance, and realization-loss rates in their `evidence` blocks.
 The C2 executable subset adds active tests for partial observations:
-`eval-c2 --json` shows candidate support before/after the active test and
-then routes the selected operation through the same verifier gate.
+`eval-c2 --json` shows candidate support before/after the active test,
+the calibrated support-guard decision, uncertainty-action score, halt/EVC
+decision, any rehydrated candidates, and then routes accepted selected
+operations through the same verifier gate.
 The C3 executable subset adds adversarial authority/risk probes:
 `eval-c3 --json` checks that exactly verified actions are still rejected
 when labels or componentwise risk exceed the contract.

@@ -5,12 +5,18 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import torch
 from torch import nn
 
 from vpm.tasks.c0 import C0Task, C0Value
+
+type TorchDevice = Any
+type TorchTensor = Any
+_TORCH = cast(Any, torch)
+_NP_SAVEZ = cast(Any, np.savez)
 
 OPERATIONS = ("add", "mul", "concat", "eq")
 VALUE_KINDS = ("int", "text", "bool")
@@ -41,26 +47,26 @@ class ArithmeticProposalNet(nn.Module):
         self.slot_gate = nn.Linear(hidden_dim, hidden_dim)
         self.op_head = nn.Linear(hidden_dim, len(OPERATIONS))
 
-    def forward(self, events: torch.Tensor) -> torch.Tensor:
+    def forward(self, events: TorchTensor) -> TorchTensor:
         """Return operation logits from typed event sequences."""
         hidden = events.new_zeros((events.shape[0], self.hidden_dim))
         for step in range(events.shape[1]):
-            encoded = torch.tanh(self.input_proj(events[:, step, :]))
+            encoded = _TORCH.tanh(self.input_proj(events[:, step, :]))
             hidden = self.cell(encoded, hidden)
-        slots = torch.tanh(self.slot_gate(hidden)) * hidden
+        slots = _TORCH.tanh(self.slot_gate(hidden)) * hidden
         return self.op_head(slots)
 
 
-def event_tensor(task: C0Task, scale: float, device: torch.device) -> torch.Tensor:
+def event_tensor(task: C0Task, scale: float, device: TorchDevice) -> TorchTensor:
     """Encode one typed C0 task without leaking the operation label."""
-    events = torch.zeros((3, FEATURES), dtype=torch.float32, device=device)
+    events = _TORCH.zeros((3, FEATURES), dtype=_TORCH.float32, device=device)
     fill_value_features(events[0], task.left, scale)
     fill_value_features(events[1], task.right, scale)
     fill_value_features(events[2], task.expected, scale)
     return events
 
 
-def fill_value_features(row: torch.Tensor, value: C0Value, scale: float) -> None:
+def fill_value_features(row: TorchTensor, value: C0Value, scale: float) -> None:
     """Fill one operand row with type and compact value features."""
     scalar_offset = len(VALUE_KINDS)
     if isinstance(value, bool):
@@ -88,13 +94,13 @@ def stable_text_feature(value: str) -> float:
 def batch_tensors(
     tasks: list[C0Task],
     scale: float,
-    device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor]:
+    device: TorchDevice,
+) -> tuple[TorchTensor, TorchTensor]:
     """Build event and target tensors for a task batch."""
-    events = torch.stack([event_tensor(task, scale, device) for task in tasks])
-    targets = torch.tensor(
+    events = _TORCH.stack([event_tensor(task, scale, device) for task in tasks])
+    targets = _TORCH.tensor(
         [operation_index(task.operation) for task in tasks],
-        dtype=torch.long,
+        dtype=_TORCH.long,
         device=device,
     )
     return events, targets
@@ -103,14 +109,14 @@ def batch_tensors(
 def predict_operation(
     model: ArithmeticProposalNet,
     task: C0Task,
-    device: torch.device | None = None,
+    device: TorchDevice | None = None,
 ) -> OperationProposal:
     """Predict one operation without assigning certificate authority."""
     model_device = device or next(model.parameters()).device
     model.eval()
-    with torch.no_grad():
+    with _TORCH.no_grad():
         events = event_tensor(task, model.scale, model_device).unsqueeze(0)
-        probs = torch.softmax(model(events), dim=-1).squeeze(0)
+        probs = _TORCH.softmax(model(events), dim=-1).squeeze(0)
         confidence, index = probs.max(dim=0)
     return OperationProposal(OPERATIONS[int(index.item())], float(confidence.item()))
 
@@ -122,11 +128,11 @@ def operation_index(operation: str) -> int:
     return OPERATIONS.index(operation)
 
 
-def resolve_device(requested: str = "auto") -> torch.device:
+def resolve_device(requested: str = "auto") -> TorchDevice:
     """Resolve a training/inference device."""
     if requested == "auto":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    return torch.device(requested)
+        return _TORCH.device("cuda" if _TORCH.cuda.is_available() else "cpu")
+    return _TORCH.device(requested)
 
 
 def save_prototype(model: ArithmeticProposalNet, path: Path) -> Path:
@@ -136,7 +142,7 @@ def save_prototype(model: ArithmeticProposalNet, path: Path) -> Path:
     arrays: dict[str, np.ndarray] = {"__metadata__": np.array(metadata)}
     for key, tensor in model.state_dict().items():
         arrays[key] = tensor.detach().cpu().numpy()
-    np.savez(path, **arrays)
+    _NP_SAVEZ(path, **arrays)
     return path
 
 
@@ -149,7 +155,7 @@ def load_prototype(path: Path, device: str = "auto") -> ArithmeticProposalNet:
             hidden_dim=int(metadata["hidden_dim"]),
             scale=float(metadata["scale"]),
         )
-        state = {key: torch.as_tensor(data[key]) for key in data.files if key != "__metadata__"}
+        state = {key: _TORCH.as_tensor(data[key]) for key in data.files if key != "__metadata__"}
     model.load_state_dict(state)
     return model.to(target)
 

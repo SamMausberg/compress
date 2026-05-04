@@ -25,10 +25,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from vpm._reports import float_field, object_map
+from vpm._reports import float_field, object_list, object_map
 from vpm.evaluation.compression import CompressionReplayReport, evaluate_c5
 from vpm.evaluation.dialogue import DialogueEvaluationReport, evaluate_c4
-from vpm.infer import InferenceResult, run_task, run_task_candidate
+from vpm.infer import (
+    HaltDecision,
+    InferenceResult,
+    SupportGuardReport,
+    TestSelectionTrace,
+    guard_support,
+    halt_decision,
+    run_task,
+    run_task_candidate,
+    select_test,
+    support_reduction_action,
+)
 from vpm.tasks.c0 import C0Task, curriculum
 from vpm.tasks.c1 import C1Task, hidden_schema_curriculum
 from vpm.tasks.c2 import ActiveTestTrace, C2Task, active_curriculum, active_test
@@ -115,6 +126,9 @@ class ActiveEvaluationReport:
     tasks: int
     verifier: EvaluationReport
     traces: tuple[ActiveTestTrace, ...]
+    support_guards: tuple[SupportGuardReport, ...]
+    test_selections: tuple[TestSelectionTrace, ...]
+    halt_decisions: tuple[HaltDecision, ...]
 
     @property
     def solve_rate(self) -> float:
@@ -137,16 +151,45 @@ class ActiveEvaluationReport:
         """Mean executable candidate count after active testing."""
         return mean([float(len(trace.candidates_after)) for trace in self.traces])
 
+    @property
+    def support_guard_pass_rate(self) -> float:
+        """Fraction of pruning decisions accepted by the support guard."""
+        passed = sum(guard.passed for guard in self.support_guards)
+        return passed / len(self.support_guards) if self.support_guards else 0.0
+
+    @property
+    def rehydrated(self) -> int:
+        """Number of pruning decisions that required candidate rehydration."""
+        return sum(bool(guard.rehydrated) for guard in self.support_guards)
+
+    @property
+    def mean_test_score(self) -> float:
+        """Mean selected active-test score."""
+        return mean([selection.selected_score for selection in self.test_selections])
+
+    @property
+    def halt_rate(self) -> float:
+        """Fraction of C2 traces whose inference loop should halt after testing."""
+        halted = sum(decision.should_halt for decision in self.halt_decisions)
+        return halted / len(self.halt_decisions) if self.halt_decisions else 0.0
+
     def to_dict(self) -> dict[str, object]:
         """JSON-friendly active-test report."""
         return {
             "tasks": self.tasks,
             "solve_rate": self.solve_rate,
             "support_reduction_rate": self.support_reduction_rate,
+            "support_guard_pass_rate": self.support_guard_pass_rate,
+            "rehydrated": self.rehydrated,
+            "mean_test_score": self.mean_test_score,
+            "halt_rate": self.halt_rate,
             "mean_candidates_before": self.mean_candidates_before,
             "mean_candidates_after": self.mean_candidates_after,
             "verifier": self.verifier.to_dict(),
             "traces": [trace.to_dict() for trace in self.traces],
+            "support_guards": [guard.to_dict() for guard in self.support_guards],
+            "test_selections": [selection.to_dict() for selection in self.test_selections],
+            "halt_decisions": [decision.to_dict() for decision in self.halt_decisions],
         }
 
 
@@ -231,15 +274,55 @@ def evaluate_c2(
     """Run C2 active-test selection and verifier-gated execution."""
     cases = active_curriculum(limit) if tasks is None else tasks
     traces = tuple(active_test(task) for task in cases)
+    support_guards = tuple(
+        guard_support(
+            trace.candidates_before,
+            trace.candidates_after,
+            exact_rejection_witness=trace.selected_operation is not None,
+        )
+        for trace in traces
+    )
+    test_selections = tuple(
+        select_test(
+            (
+                support_reduction_action(
+                    trace.candidates_before,
+                    trace.candidates_after,
+                    guard.epsilon_prune,
+                ),
+            )
+        )
+        for trace, guard in zip(traces, support_guards, strict=True)
+    )
+    halt_decisions = tuple(
+        halt_decision(
+            certificate=guard.certificate,
+            threshold=1.0,
+            expected_utility_gain=selection.selected_score,
+            compute_delta=selection.selected.cost,
+            support_delta=guard.epsilon_prune,
+            best_action_score=selection.selected_score,
+        )
+        for guard, selection in zip(support_guards, test_selections, strict=True)
+    )
     results = [
         run_task_candidate(task.to_c0_task(trace.selected_operation), trace.selected_operation)
-        for task, trace in zip(cases, traces, strict=True)
-        if trace.selected_operation is not None
+        for task, trace, guard, decision in zip(
+            cases,
+            traces,
+            support_guards,
+            halt_decisions,
+            strict=True,
+        )
+        if trace.selected_operation is not None and guard.passed and decision.should_halt
     ]
     return ActiveEvaluationReport(
         tasks=len(cases),
         verifier=summarize(results),
         traces=traces,
+        support_guards=support_guards,
+        test_selections=test_selections,
+        halt_decisions=halt_decisions,
     )
 
 
@@ -314,7 +397,7 @@ def policy_gate_trace(probe: C3PolicyProbe) -> PolicyGateTrace:
     gate = object_map(result.native_report.get("gate")) or {}
     authority = object_map(gate.get("authority")) or {}
     verification = object_map(result.native_report.get("verification")) or {}
-    reasons = gate.get("reasons")
+    reasons = object_list(gate.get("reasons")) or []
     return PolicyGateTrace(
         probe_id=probe.task_id,
         expected_pass=probe.expected_pass,
@@ -323,9 +406,7 @@ def policy_gate_trace(probe: C3PolicyProbe) -> PolicyGateTrace:
         memory_active=result.memory_active,
         auth_ok=authority.get("auth_ok") is True,
         risk_ok=authority.get("risk_ok") is True,
-        reasons=tuple(reason for reason in reasons if isinstance(reason, str))
-        if isinstance(reasons, list)
-        else (),
+        reasons=tuple(reason for reason in reasons if isinstance(reason, str)),
     )
 
 

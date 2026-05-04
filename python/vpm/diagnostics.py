@@ -5,8 +5,11 @@ from __future__ import annotations
 import platform
 from dataclasses import asdict, dataclass
 from importlib import import_module
+from typing import Any, cast
 
 import torch
+
+_TORCH = cast(Any, torch)
 
 
 @dataclass(frozen=True)
@@ -28,12 +31,12 @@ class DiagnosticReport:
 
 def collect_diagnostics() -> DiagnosticReport:
     """Inspect Python, PyTorch/CUDA, and the Rust native extension."""
-    cuda_available = torch.cuda.is_available()
-    cuda_device = torch.cuda.get_device_name(0) if cuda_available else None
+    cuda_available = bool(_TORCH.cuda.is_available())
+    cuda_device = str(_TORCH.cuda.get_device_name(0)) if cuda_available else None
     return DiagnosticReport(
         python=platform.python_version(),
-        torch=torch.__version__,
-        torch_cuda=torch.version.cuda,
+        torch=str(_TORCH.__version__),
+        torch_cuda=_TORCH.version.cuda,
         cuda_available=cuda_available,
         cuda_device=cuda_device,
         cuda_probe_ok=cuda_probe_ok(cuda_available),
@@ -46,7 +49,7 @@ def cuda_probe_ok(cuda_available: bool) -> bool:
     if not cuda_available:
         return False
     try:
-        values = torch.ones((2, 2), device="cuda")
+        values = _TORCH.ones((2, 2), device="cuda")
         return float((values @ values).sum().item()) == 8.0
     except RuntimeError:
         return False

@@ -24,7 +24,7 @@
 use pyo3::{exceptions::PyValueError, prelude::*};
 use vpm_core::{Contract, RiskVector, Value};
 use vpm_dsl::{c0_add_program, c0_concat_program, c0_eq_program, c0_mul_program, Program};
-use vpm_verify::{run_program, run_program_with_policy};
+use vpm_verify::{run_program, run_program_with_policy, support_guard};
 
 /// The `vpm._native` Python extension module.
 ///
@@ -45,6 +45,7 @@ fn vpm_py_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_c0_arith_json, m)?)?;
     m.add_function(wrap_pyfunction!(run_c0_typed_json, m)?)?;
     m.add_function(wrap_pyfunction!(run_c0_typed_policy_json, m)?)?;
+    m.add_function(wrap_pyfunction!(support_guard_json, m)?)?;
 
     register_submodule(
         m,
@@ -149,6 +150,29 @@ fn run_c0_typed_policy_json(
     let program = build_typed_program(operation, left, right)?;
     let report = run_program_with_policy(&program, expected, &labels, risk)
         .map_err(PyValueError::new_err)?;
+    serde_json::to_string_pretty(&report).map_err(json_error)
+}
+
+/// Run the calibrated support guard from §5 eqs. 92-95.
+#[pyfunction]
+fn support_guard_json(
+    candidates_before: usize,
+    candidates_after: usize,
+    retained_mass: f64,
+    recall_upper: f64,
+    shift_loss: f64,
+    selection_loss: f64,
+    epsilon_max: f64,
+) -> PyResult<String> {
+    let report = support_guard(
+        candidates_before,
+        candidates_after,
+        retained_mass,
+        recall_upper,
+        shift_loss,
+        selection_loss,
+        epsilon_max,
+    );
     serde_json::to_string_pretty(&report).map_err(json_error)
 }
 

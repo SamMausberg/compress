@@ -45,6 +45,10 @@ use vpm_dsl::{execute, Program};
 use vpm_egraph::{canonicalize, CanonicalProgram};
 use vpm_ledger::{EntryType, LedgerDraft, LedgerSummary};
 
+mod support;
+
+pub use support::{support_guard, SupportAction, SupportGuardReport};
+
 /// Opaque calibrated e-value. Raw pass counts never cross this boundary.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct EVal(f64);
@@ -352,6 +356,6 @@ mod tests {
         assert!(report.verification.passed);
         assert!(!report.gate.passed);
         assert!(!report.gate.authority.risk_ok);
-        assert_eq!(report.ledger.total_risk.privacy, 0.1);
+        assert!((report.ledger.total_risk.privacy - 0.1).abs() <= f64::EPSILON);
     }
 }

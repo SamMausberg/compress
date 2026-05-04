@@ -29,6 +29,15 @@ from dataclasses import asdict, dataclass, field
 
 from vpm._reports import object_map
 from vpm.compiler import CompiledProgram, compile_candidate, compile_task
+from vpm.infer.halt import HaltDecision, HaltWeights, halt_decision
+from vpm.infer.support_guard import SupportGuardReport, guard_support
+from vpm.infer.test_select import (
+    TestAction,
+    TestSelectionTrace,
+    TestSelectionWeights,
+    select_test,
+    support_reduction_action,
+)
 from vpm.language import NormalForm, render_certified, render_question
 from vpm.memory import MemoryLibrary
 from vpm.retrieval import RetrievalBundle, retrieve
@@ -168,10 +177,20 @@ def native_value(report: dict[str, object]) -> object:
 
 
 __all__ = [
+    "HaltDecision",
+    "HaltWeights",
     "InferenceResult",
+    "SupportGuardReport",
+    "TestAction",
+    "TestSelectionTrace",
+    "TestSelectionWeights",
+    "guard_support",
+    "halt_decision",
     "native_route",
     "native_value",
     "run_c0_add",
     "run_task",
     "run_task_candidate",
+    "select_test",
+    "support_reduction_action",
 ]

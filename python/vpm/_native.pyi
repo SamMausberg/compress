@@ -37,3 +37,12 @@ def run_c0_typed_policy_json(
     labels_json: str,
     risk_json: str,
 ) -> str: ...
+def support_guard_json(
+    candidates_before: int,
+    candidates_after: int,
+    retained_mass: float,
+    recall_upper: float,
+    shift_loss: float,
+    selection_loss: float,
+    epsilon_max: float,
+) -> str: ...

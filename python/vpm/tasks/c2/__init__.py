@@ -176,6 +176,8 @@ def stage_spec() -> StageSpec:
         implemented_components=(
             "partial-observation-generators",
             "active-test-selector",
+            "uncertainty-action-scoring",
+            "evc-halt-rule",
             "support-set-reduction",
             "c0-verifier-bridge",
         ),

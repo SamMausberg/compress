@@ -184,7 +184,7 @@ def macro_replay_reasons(
     sublinear: bool,
 ) -> tuple[str, ...]:
     """Collect failed macro admission reasons."""
-    reasons = []
+    reasons: list[str] = []
     if not replay_safe:
         reasons.append("replay gate failed")
     if frontier_delta <= 0.0:
