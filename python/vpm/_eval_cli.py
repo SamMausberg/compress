@@ -19,7 +19,9 @@ from vpm.evaluation import (
 from vpm.evaluation.ablations import evaluate_ablations
 from vpm.evaluation.baselines import evaluate_baseline_suite
 from vpm.evaluation.failure_modes import evaluate_failure_modes
+from vpm.evaluation.phase_transition import evaluate_phase_transition
 from vpm.evaluation.red_team import red_team_replay
+from vpm.evaluation.saturation import evaluate_saturation
 
 
 def register_eval_commands(app: typer.Typer) -> None:
@@ -159,6 +161,26 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
             typer.echo(
                 f"ready_for_claims={report.ready_for_claims} "
                 f"missing={','.join(report.missing_families)}"
+            )
+
+    @app.command("eval-phase")
+    def eval_phase_command(
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Run compression phase-transition and saturation diagnostics."""
+        phase = evaluate_phase_transition()
+        saturation = evaluate_saturation(phase.compression)
+        payload = {
+            "phase_transition": phase.to_dict(),
+            "saturation": saturation.to_dict(),
+        }
+        if as_json:
+            typer.echo(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"phase_observed={phase.observed} "
+                f"saturated={saturation.saturated} "
+                f"positive_macros={saturation.positive_macros}"
             )
 
     @app.command("eval-red-team")
