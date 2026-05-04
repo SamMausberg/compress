@@ -16,7 +16,7 @@ import typer
 
 from . import __version__
 from .diagnostics import collect_diagnostics
-from .evaluation import evaluate_c0, evaluate_c1, evaluate_c2, evaluate_c3
+from .evaluation import evaluate_c0, evaluate_c1, evaluate_c2, evaluate_c3, evaluate_c4
 from .infer import run_c0_add, run_task
 from .substrate import load_prototype
 from .tasks import stages, typed_hidden_task, typed_task
@@ -37,6 +37,19 @@ app = typer.Typer(
     help="VPM-5.3 reference implementation. See docs/architecture/.",
     no_args_is_help=True,
 )
+
+
+def prototype_summary(report) -> str:
+    return (
+        f"solve_rate={report.solve_rate:.3f} "
+        f"op_acc={report.operation_accuracy:.3f} "
+        f"compression={report.compression_ratio:.3f} "
+        f"frontier_delta={report.compression.frontier_delta_vs_enumerative:.3f}"
+    )
+
+
+def training_summary(report) -> str:
+    return f"{prototype_summary(report.heldout)} artifact={report.artifact}"
 
 
 @app.command()
@@ -176,6 +189,22 @@ def eval_c3_command(
         )
 
 
+@app.command("eval-c4")
+def eval_c4_command(
+    as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+) -> None:
+    """Run C4 controlled dialogue source/rebuttal/realization gates."""
+    report = evaluate_c4()
+    if as_json:
+        typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    else:
+        typer.echo(
+            f"render_rate={report.render_rate:.3f} "
+            f"refusal_rate={report.refusal_rate:.3f} "
+            f"violations={report.violations}"
+        )
+
+
 @app.command("train-c0")
 def train_c0_command(
     limit: int = typer.Option(8, help="Absolute integer limit for the generated curriculum."),
@@ -201,18 +230,7 @@ def train_c0_command(
     if as_json:
         typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
     else:
-        heldout = report.heldout
-        typer.echo(
-            " ".join(
-                [
-                    f"solve_rate={heldout.solve_rate:.3f}",
-                    f"op_acc={heldout.operation_accuracy:.3f}",
-                    f"compression={heldout.compression_ratio:.3f}",
-                    f"frontier_delta={heldout.compression.frontier_delta_vs_enumerative:.3f}",
-                    f"artifact={report.artifact}",
-                ]
-            )
-        )
+        typer.echo(training_summary(report))
 
 
 @app.command("train-c1")
@@ -240,18 +258,7 @@ def train_c1_command(
     if as_json:
         typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
     else:
-        heldout = report.heldout
-        typer.echo(
-            " ".join(
-                [
-                    f"solve_rate={heldout.solve_rate:.3f}",
-                    f"op_acc={heldout.operation_accuracy:.3f}",
-                    f"compression={heldout.compression_ratio:.3f}",
-                    f"frontier_delta={heldout.compression.frontier_delta_vs_enumerative:.3f}",
-                    f"artifact={report.artifact}",
-                ]
-            )
-        )
+        typer.echo(training_summary(report))
 
 
 @app.command("infer-c0")
@@ -350,12 +357,7 @@ def eval_prototype_command(
     if as_json:
         typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
     else:
-        typer.echo(
-            f"solve_rate={report.solve_rate:.3f} "
-            f"op_acc={report.operation_accuracy:.3f} "
-            f"compression={report.compression_ratio:.3f} "
-            f"frontier_delta={report.compression.frontier_delta_vs_enumerative:.3f}"
-        )
+        typer.echo(prototype_summary(report))
 
 
 @app.command("eval-c1-prototype")
@@ -373,12 +375,7 @@ def eval_c1_prototype_command(
     if as_json:
         typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
     else:
-        typer.echo(
-            f"solve_rate={report.solve_rate:.3f} "
-            f"op_acc={report.operation_accuracy:.3f} "
-            f"compression={report.compression_ratio:.3f} "
-            f"frontier_delta={report.compression.frontier_delta_vs_enumerative:.3f}"
-        )
+        typer.echo(prototype_summary(report))
 
 
 @app.command("stages")

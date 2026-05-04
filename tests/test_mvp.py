@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 from vpm import _native
-from vpm.evaluation import evaluate_c0, evaluate_c1, evaluate_c2, evaluate_c3
+from vpm.evaluation import evaluate_c0, evaluate_c1, evaluate_c2, evaluate_c3, evaluate_c4
 from vpm.infer import run_c0_add, run_task, run_task_candidate
 from vpm.memory import MemoryLibrary
 from vpm.tasks import (
@@ -16,7 +16,9 @@ from vpm.tasks import (
     arithmetic_task,
     as_c0_tasks,
     concat_task,
+    dialogue_curriculum,
     equality_task,
+    gate_dialogue,
     hidden_schema_curriculum,
     multiplication_task,
     policy_probe_curriculum,
@@ -185,6 +187,23 @@ def test_c3_policy_probes_reject_adversarial_gate_requests() -> None:
     assert any(not trace.risk_ok for trace in rejected)
 
 
+def test_c4_dialogue_gates_require_source_rebuttal_and_realization() -> None:
+    tasks = dialogue_curriculum()
+    passing = gate_dialogue(tasks[0])
+    rejected = gate_dialogue(tasks[-1])
+    assert passing.rendered.startswith("Paris ")
+    assert passing.passed is True
+    assert rejected.rendered == "refusal"
+    assert "material rebuttal present" in rejected.reasons
+
+    metrics = evaluate_c4(tasks)
+    assert metrics.rendered == 2
+    assert metrics.refused == 1
+    assert metrics.violations == 0
+    assert metrics.source_coverage_rate == 1.0
+    assert metrics.realization_ok_rate == 1.0
+
+
 def test_all_curriculum_modules_have_runtime_metadata() -> None:
     specs = stages()
     assert [spec.name for spec in specs] == ["C0", "C1", "C2", "C3", "C4", "C5"]
@@ -192,6 +211,7 @@ def test_all_curriculum_modules_have_runtime_metadata() -> None:
     assert specs[1].executable is True
     assert specs[2].executable is True
     assert specs[3].executable is True
+    assert specs[4].executable is True
     assert all(spec.implemented_components for spec in specs)
 
 
@@ -273,6 +293,19 @@ def test_cli_runs_c3_policy_evaluation() -> None:
     payload = json.loads(completed.stdout)
     assert payload["violation_rate"] == 0.0
     assert payload["rejected"] >= 3
+
+
+def test_cli_runs_c4_dialogue_evaluation() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "vpm", "eval-c4", "--json"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(completed.stdout)
+    assert payload["rendered"] == 2
+    assert payload["refused"] == 1
+    assert payload["violation_rate"] == 0.0
 
 
 def test_cli_exposes_authority_rejection() -> None:
