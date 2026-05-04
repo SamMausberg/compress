@@ -55,6 +55,7 @@ from vpm.tasks.c4 import C4DialogueTask, dialogue_curriculum, gate_dialogue
 from vpm.tasks.c4 import stage_spec as c4_stage
 from vpm.tasks.c5 import C5MacroCandidate, macro_replay_curriculum
 from vpm.tasks.c5 import stage_spec as c5_stage
+from vpm.tasks.hard_domains import HardDomain, HardDomainTask, hard_domain_curriculum
 from vpm.tasks.spec import StageSpec
 
 
@@ -72,6 +73,8 @@ __all__ = [
     "C3PolicyProbe",
     "C4DialogueTask",
     "C5MacroCandidate",
+    "HardDomain",
+    "HardDomainTask",
     "StageSpec",
     "active_curriculum",
     "active_test",
@@ -83,6 +86,7 @@ __all__ = [
     "dialogue_curriculum",
     "equality_task",
     "gate_dialogue",
+    "hard_domain_curriculum",
     "hidden_schema_curriculum",
     "hidden_task",
     "macro_replay_curriculum",

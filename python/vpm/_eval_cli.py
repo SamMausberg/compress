@@ -19,6 +19,7 @@ from vpm.evaluation import (
 from vpm.evaluation.ablations import evaluate_ablations
 from vpm.evaluation.baselines import evaluate_baseline_suite
 from vpm.evaluation.failure_modes import evaluate_failure_modes
+from vpm.evaluation.hard_domains import evaluate_hard_domains
 from vpm.evaluation.phase_transition import evaluate_phase_transition
 from vpm.evaluation.red_team import red_team_replay
 from vpm.evaluation.saturation import evaluate_saturation
@@ -181,6 +182,21 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
                 f"phase_observed={phase.observed} "
                 f"saturated={saturation.saturated} "
                 f"positive_macros={saturation.positive_macros}"
+            )
+
+    @app.command("eval-hard-domains")
+    def eval_hard_domains_command(
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Run held-out hard-domain probes."""
+        report = evaluate_hard_domains()
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"solve_rate={report.solve_rate:.3f} "
+                f"baseline_solve_rate={report.baseline_solve_rate:.3f} "
+                f"tasks={report.tasks}"
             )
 
     @app.command("eval-red-team")
