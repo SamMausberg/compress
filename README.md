@@ -200,6 +200,8 @@ saturation diagnostic over frontier lower-confidence bounds.
 research-math, formal proof, tool-use, and source-grounded tasks with exact
 verifier traces and a simple matched baseline. `eval-red-team --json`
 includes these hard-domain probes alongside failure modes and ablations.
+`eval-compute --json` checks the matched-compute ledger and rejects hidden
+test-time compute in the failure-mode suite.
 The example scripts mirror this: `examples/vpm0/run.py` prints runtime
 diagnostics plus C0 inference/evaluation, and `examples/vpm0/train.py`
 prints C0/C1 training reports, reloaded evaluations, learned inference, and
