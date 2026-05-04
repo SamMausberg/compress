@@ -58,6 +58,33 @@ class BaselineMetrics:
 
 
 @dataclass(frozen=True)
+class PrototypeTrace:
+    """One held-out proposal with verifier and memory outcome."""
+
+    task_id: str
+    expected_operation: str
+    proposed_operation: str
+    passed: bool
+    rendered: str
+    memory_key: str | None
+    gate_reasons: tuple[str, ...]
+    errors: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-friendly audit trace."""
+        return {
+            "task_id": self.task_id,
+            "expected_operation": self.expected_operation,
+            "proposed_operation": self.proposed_operation,
+            "passed": self.passed,
+            "rendered": self.rendered,
+            "memory_key": self.memory_key,
+            "gate_reasons": self.gate_reasons,
+            "errors": self.errors,
+        }
+
+
+@dataclass(frozen=True)
 class PrototypeEvalReport:
     """Held-out report for learned proposals and verifier-gated outcomes."""
 
@@ -69,6 +96,7 @@ class PrototypeEvalReport:
     macro_memory_active: int
     compression_ratio: float
     baselines: tuple[BaselineMetrics, ...]
+    traces: tuple[PrototypeTrace, ...]
 
     @property
     def solve_rate(self) -> float:
@@ -87,6 +115,7 @@ class PrototypeEvalReport:
             "macro_memory_active": self.macro_memory_active,
             "compression_ratio": self.compression_ratio,
             "baselines": [baseline.to_dict() for baseline in self.baselines],
+            "traces": [trace.to_dict() for trace in self.traces],
         }
 
 
@@ -202,6 +231,7 @@ def evaluate_prototype(
     certified = 0
     correct_ops = 0
     confidence_sum = 0.0
+    traces: list[PrototypeTrace] = []
     for task in heldout_tasks:
         proposal = predict_operation(model, task, device)
         result = run_task_candidate(task, proposal.operation)
@@ -209,10 +239,22 @@ def evaluate_prototype(
         certified += int(passed)
         correct_ops += int(proposal.operation == task.operation)
         confidence_sum += proposal.confidence
+        memory_key = None
         if passed:
-            macro_memory.admit(
-                f"macro:{proposal.operation}", proposal.operation, result.native_report
+            memory_key = f"macro:{proposal.operation}"
+            macro_memory.admit(memory_key, proposal.operation, result.native_report)
+        traces.append(
+            PrototypeTrace(
+                task_id=task.task_id,
+                expected_operation=task.operation,
+                proposed_operation=proposal.operation,
+                passed=passed,
+                rendered=result.rendered,
+                memory_key=memory_key,
+                gate_reasons=gate_reasons(result.native_report),
+                errors=tuple(result.errors),
             )
+        )
 
     tasks = len(heldout_tasks)
     baselines = (
@@ -234,7 +276,19 @@ def evaluate_prototype(
         macro_memory_active=macro_active,
         compression_ratio=compression,
         baselines=baselines,
+        traces=tuple(traces),
     )
+
+
+def gate_reasons(report: dict[str, object]) -> tuple[str, ...]:
+    """Extract gate reasons from a native report."""
+    gate = report.get("gate")
+    if not isinstance(gate, dict):
+        return ()
+    reasons = gate.get("reasons")
+    if not isinstance(reasons, list):
+        return ()
+    return tuple(reason for reason in reasons if isinstance(reason, str))
 
 
 def operation_accuracy(

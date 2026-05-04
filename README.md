@@ -124,6 +124,9 @@ operations, writes an `artifacts/vpm_c0_prototype.npz` weight file, runs held-ou
 tasks through the native executor/verifier/gate, reports rejected proposals,
 and compares solve rate against one-candidate majority/add-only baselines plus
 an exact enumerative upper bound. Learned proposals never certify themselves.
+`eval-prototype --json` includes per-task traces with expected/proposed
+operations, pass/refusal status, gate reasons, errors, and admitted memory
+keys.
 
 Python API:
 

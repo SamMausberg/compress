@@ -25,9 +25,12 @@ def test_trainable_prototype_learns_and_stays_verifier_gated(tmp_path) -> None:
     assert report.heldout.operation_accuracy > baselines["majority"].operation_accuracy
     assert report.heldout.macro_memory_active >= 2
     assert report.heldout.compression_ratio > 1.0
+    assert any(trace.passed and trace.memory_key for trace in report.heldout.traces)
+    assert any(not trace.passed for trace in report.heldout.traces)
 
     loaded_report = evaluate_saved_prototype(artifact, limit=2, device="cpu")
     assert loaded_report.solve_rate == report.heldout.solve_rate
+    assert len(loaded_report.traces) == loaded_report.tasks
 
     _, heldout = curriculum_split(2)
     task, inference = first_certified_exact(model, heldout)
