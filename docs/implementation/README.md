@@ -156,3 +156,45 @@ certified utility positive; all Criterion 1 failure clauses unfired.
 - External LLMs as anything other than ablated teachers with logged
   budgets and zero certificate authority (§8, paragraph on hidden
   compute).
+
+## Known risks
+
+### Python 3.14 wheel coverage (as of 2026-05-04)
+
+The project requires Python 3.14 (`pyproject.toml:10`). Several declared
+deps lack 3.14 wheels on PyPI today:
+
+- `torch` 2.11.x (also under CVE-2026-24747 — patched torch 2.11.z
+  pending; floor stays at `>=2.11` until then per the TODO at
+  `pyproject.toml:33-36`)
+- `faiss-cpu` (optional, `[retrieve]` extra)
+- `sentence-transformers` (optional, `[retrieve]` extra)
+- `mkdocs-material` (docs group)
+- `pre-commit`, `pyright`, `deptry` (dev group)
+
+The maturin-built extension is fine: PyO3 0.28 + abi3-py314 work end
+to end, and the smoke import in `ci.yml` (`from vpm._native import …`)
+proves it.
+
+**Mitigation strategy:**
+1. Keep watching upstream releases (`pip-audit` + `cargo deny` already
+   cover security drift; `dependabot.yml` covers maintenance drift).
+2. If M2 (substrate, requires `torch`) is blocked at the start of the
+   milestone by missing 3.14 wheels for `torch`, fall back to Python
+   3.13 — single change in `pyproject.toml:10` (and the matching
+   `uv python install` lines in `.github/workflows/ci.yml`).
+3. **Do not pre-emptively pin to 3.13.** Python 3.14's free-threaded
+   mode matters for the substrate's typed event hypergraph
+   (parallelism over slots, §3 eq. 37); it's worth waiting on.
+
+### LOC budgets
+
+The repo enforces per-file and per-folder line caps via
+`scripts/check-loc.py` (configured in `.loc-budget.toml`). This exists
+because we collaborate heavily with AI assistants; their characteristic
+failure modes (regenerating an 800-line file to add 12 lines; writing
+200-line functions where 4×50 would do) are detectable purely by raw
+line count, and a guideline alone won't constrain an autonomous AI's
+output. CI runs the checker in hard mode (`LOC_HARD=1`); locally it's
+advisory. Companion tools: `clippy::too_many_lines` (Rust),
+`PLR0915` in ruff (Python).

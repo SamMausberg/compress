@@ -77,6 +77,10 @@ needless_pass_by_value = "allow"
 cast_precision_loss = "allow"
 cast_possible_truncation = "allow"
 cast_sign_loss = "allow"
+# AI-bloat tripwires. Thresholds in clippy.toml; complement to the
+# per-file/per-folder budgets in .loc-budget.toml.
+too_many_lines = "warn"
+cognitive_complexity = "warn"
 
 [profile.release]
 lto = "thin"

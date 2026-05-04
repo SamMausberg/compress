@@ -128,7 +128,7 @@ select = [
   "RUF",                   # ruff-specific
   "TID",                   # tidy imports
   "ARG",                   # unused arguments
-  "PL",                    # pylint
+  "PL",                    # pylint (PLR0915 fires on bloated functions; see ignore list for muted cousins)
   "TRY",                   # tryceratops
   "PERF",                  # perflint
   "FURB",                  # refurb
@@ -139,6 +139,10 @@ ignore = [
   "PLR0913",               # too many arguments — research code routinely needs them
   "PLR0911",               # too many returns — same
   "PLR2004",               # magic numbers — same
+  # PLR0915 (too many statements per function) is intentionally NOT
+  # muted: it's the AI-bloat tripwire on the Python side. Companion
+  # rules: clippy::too_many_lines on Rust, scripts/check-loc.py on
+  # files/folders.
   "TRY003",                # long exception messages
   "S101",                  # `assert` is fine in non-test code that isn't safety-critical
 ]

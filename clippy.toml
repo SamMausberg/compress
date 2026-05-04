@@ -1,0 +1,25 @@
+# Clippy threshold overrides for the `compress` workspace.
+#
+# The defaults are tuned for typical application code; we want different
+# numbers because (a) research code legitimately has long algorithms in
+# a few places (e-graph rewrites, posterior compilation, loss families)
+# and (b) we collaborate heavily with AI assistants, which makes raw
+# size limits the cheapest way to detect regenerated-instead-of-edited
+# files.
+#
+# Companion config: per-file/per-folder budgets in `.loc-budget.toml`,
+# enforced by `scripts/check-loc.py`.
+
+# Maximum lines per function. Default: 100. We tighten to 80 because an
+# 80-line function fits one screen and one AI read window without
+# scrolling, which keeps refactoring tractable.
+too-many-lines-threshold = 80
+
+# Maximum cognitive complexity per function. Default: 25. We allow 30
+# because verifier and gate code naturally branches on contract clauses.
+cognitive-complexity-threshold = 30
+
+# Treat private docs as part of the lint surface — we want missing-docs
+# warnings to fire in private items too, since this codebase is the
+# reference implementation of a published spec.
+missing-docs-in-crate-items = true

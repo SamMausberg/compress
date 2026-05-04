@@ -152,3 +152,70 @@ jobs:
         uses: raven-actions/actionlint@v2
         with:
           fail-on-error: true
+
+  loc-budget:
+    name: LOC budget
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python
+        # tomllib is in stdlib from 3.11; ubuntu-24.04 ships 3.12 by default,
+        # but pin to be explicit (and to match the dev toolchain we test on).
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run scripts/check-loc.py (hard mode)
+        env:
+          LOC_HARD: "1"
+        run: python3 scripts/check-loc.py
+
+  pr-size-advisory:
+    name: PR size advisory
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Compute net additions vs. base
+        id: diffstat
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          git fetch origin "$BASE_REF" --depth=1
+          ADDED=$(git diff --shortstat "origin/$BASE_REF...HEAD" \
+            | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo 0)
+          REMOVED=$(git diff --shortstat "origin/$BASE_REF...HEAD" \
+            | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo 0)
+          NET=$((ADDED - REMOVED))
+          {
+            echo "added=$ADDED"
+            echo "removed=$REMOVED"
+            echo "net=$NET"
+          } >> "$GITHUB_OUTPUT"
+          echo "Net additions: $NET (+$ADDED / -$REMOVED)"
+      - name: Comment if PR exceeds 1,200 net lines
+        if: steps.diffstat.outputs.net > 1200
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const net = ${{ steps.diffstat.outputs.net }};
+            const added = ${{ steps.diffstat.outputs.added }};
+            const removed = ${{ steps.diffstat.outputs.removed }};
+            const body = [
+              `**LOC advisory**: this PR adds **${net}** net lines `,
+              `(+${added} / -${removed}), above the 1,200-line soft trip-wire.\n\n`,
+              `This is the canonical signature of an AI assistant regenerating `,
+              `a file end-to-end instead of editing it. Worth a glance to see `,
+              `whether the diff could be split or trimmed before merge.\n\n`,
+              `Not a blocker — see \`.loc-budget.toml\` for the per-file/per-folder `,
+              `caps that *do* block CI.`,
+            ].join('');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });

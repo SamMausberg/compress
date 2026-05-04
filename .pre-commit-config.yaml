@@ -40,3 +40,9 @@ repos:
         language: system
         types: [rust]
         pass_filenames: false
+      - id: check-loc
+        name: check LOC budget
+        entry: python3 scripts/check-loc.py
+        language: system
+        types_or: [rust, python]
+        pass_filenames: false

@@ -1,0 +1,57 @@
+# Per-file and per-folder line budgets, enforced by `scripts/check-loc.py`.
+#
+# Limits exist because the project is implemented in close collaboration
+# with AI assistants. Their two characteristic failure modes — regenerating
+# a file end-to-end to add a few lines, and writing a 200-line function
+# where 4×50 would do — are both detectable by raw line counts. A
+# guideline alone won't constrain an AI agent's output; this config does.
+#
+# - Soft limits warn (locally and in CI).
+# - Hard limits warn locally, fail in CI when env LOC_HARD=1.
+# - A file with `// loc-allow: <reason>` (Rust) or `# loc-allow: <reason>`
+#   (Python) on one of its first 50 lines is exempt from per-file checks;
+#   the reason is logged.
+#
+# Folders auto-checked: each direct child of `crates/` (one Rust crate)
+# and each direct child of `python/vpm/` (one Python subpackage).
+#
+# Override resolution: most-specific (longest) glob match wins.
+
+[defaults]
+# Per-file caps. These are raw line counts (incl. comments + blanks),
+# matching what an AI sees when it reads the file.
+file_soft = 400
+file_hard = 600
+
+# Per-folder (crate / Python subpackage) caps.
+folder_soft = 3500
+folder_hard = 5000
+
+# Per-glob overrides. Paths are relative to the repo root, forward-slash.
+# Each section's keys default to the [defaults] table when unset.
+
+# Training loss families (M5.3 implements §8 eqs. 142-168) are
+# legitimately long. Bump both file and folder caps.
+[overrides."python/vpm/training/**"]
+file_hard = 1000
+folder_hard = 8000
+
+# Criterion 1 evaluation harnesses are essentially long clause tables.
+[overrides."python/vpm/evaluation/**"]
+file_hard = 1000
+
+# Appendix B sanity conditions are clause-by-clause.
+[overrides."tests/integration/sanity/**"]
+file_hard = 1500
+
+[overrides."tests/integration/failure_modes/**"]
+file_hard = 1500
+
+# Type-safety crates: tighter. The architectural commitments (authority
+# lattice, verifier records, opaque EVal newtype) demand small,
+# auditable functions.
+[overrides."crates/vpm-authority/**"]
+file_hard = 400
+
+[overrides."crates/vpm-verify/**"]
+file_hard = 400
