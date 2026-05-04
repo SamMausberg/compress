@@ -24,3 +24,4 @@ def test_failure_report_serializes_scope_and_uncovered_clauses() -> None:
     assert "same-budget external LLM baseline" in payload["uncovered_clauses"]
     assert "hidden test-time compute accounting" not in payload["uncovered_clauses"]
     assert "source/rebuttal recall miss calibration under shift" not in payload["uncovered_clauses"]
+    assert "dependence residualization calibration under shift" not in payload["uncovered_clauses"]

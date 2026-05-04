@@ -12,6 +12,7 @@ from vpm.substrate import encode_task_graph
 from vpm.tasks.c0 import arithmetic_task
 from vpm.training.probes import edge_deletion_probe
 from vpm.training.splits import SplitAssignment
+from vpm.verifiers.dependence import dirty_dependence_shift_probe, evaluate_dependence_shift
 
 
 class FailureMode(StrEnum):
@@ -22,6 +23,7 @@ class FailureMode(StrEnum):
     SUBSTRATE_CRITICAL_EDGE_BYPASS = "substrate_critical_edge_bypass"
     SPLIT_LEAKAGE_BYPASS = "split_leakage_bypass"
     SOURCE_REBUTTAL_SHIFT_BYPASS = "source_rebuttal_shift_bypass"
+    DEPENDENCE_RESIDUALIZATION_BYPASS = "dependence_residualization_bypass"
     HIDDEN_COMPUTE_BYPASS = "hidden_compute_bypass"
     SAFETY_GATE_BYPASS = "safety_gate_bypass"
     DIALOGUE_GATE_BYPASS = "dialogue_gate_bypass"
@@ -33,7 +35,6 @@ UNCOVERED_CRITERION1_CLAUSES = (
     "same-budget external LLM baseline",
     "open-domain context and semantic ambiguity collapse",
     "entailment false-support attacks outside controlled corpus",
-    "dependence residualization calibration under shift",
     "external LLM cognitive-component dependence",
 )
 
@@ -105,6 +106,8 @@ def evaluate_failure_modes() -> FailureModeReport:
     )
     recall_shift = evaluate_recall_shift()
     dirty_recall_shift = dirty_recall_shift_probe()
+    dependence_shift = evaluate_dependence_shift()
+    dirty_dependence_shift = dirty_dependence_shift_probe()
     compute = evaluate_compute_accounting()
     hidden_compute = hidden_compute_probe()
     return FailureModeReport(
@@ -149,6 +152,15 @@ def evaluate_failure_modes() -> FailureModeReport:
                 FailureMode.HIDDEN_COMPUTE_BYPASS,
                 not compute.passed or hidden_compute.passed,
                 (f"compute_passed={compute.passed} hidden_units={hidden_compute.hidden_units:.3f}"),
+            ),
+            FailureCheck(
+                FailureMode.DEPENDENCE_RESIDUALIZATION_BYPASS,
+                not dependence_shift.passed or dirty_dependence_shift.passed,
+                (
+                    f"epsilon_dep={dependence_shift.epsilon_dep:.3f} "
+                    f"shifted_epsilon={dependence_shift.shifted_epsilon:.3f} "
+                    f"dirty_passed={dirty_dependence_shift.passed}"
+                ),
             ),
             FailureCheck(
                 FailureMode.SAFETY_GATE_BYPASS,

@@ -17,6 +17,8 @@ package holds:
   branch).
 - ``registry.py``    — Python view of the verifier registry; thin wrap
   around ``vpm._native.verify``.
+- ``dependence.py`` — dependence-block residualization and shift
+  calibration probes for correlated verifier passes.
 
 A verifier cannot certify a candidate it generated unless an independent
 replay set or independent verifier family agrees (the ``gen_v``
@@ -32,6 +34,14 @@ from typing import cast
 from vpm import _native
 from vpm._reports import float_field, object_map
 from vpm.compiler import CompiledProgram
+from vpm.verifiers.dependence import (
+    DependenceBlockTrace,
+    DependenceCalibrationReport,
+    DependenceSignal,
+    dependence_shift_curriculum,
+    dirty_dependence_shift_probe,
+    evaluate_dependence_shift,
+)
 
 RiskMap = dict[str, float]
 
@@ -95,8 +105,14 @@ def gate_passed(report: dict[str, object]) -> bool:
 
 
 __all__ = [
+    "DependenceBlockTrace",
+    "DependenceCalibrationReport",
+    "DependenceSignal",
     "RiskMap",
     "certificate_score",
+    "dependence_shift_curriculum",
+    "dirty_dependence_shift_probe",
+    "evaluate_dependence_shift",
     "gate_passed",
     "native_c0_report",
     "native_value_json",

@@ -25,6 +25,7 @@ from vpm.evaluation.phase_transition import evaluate_phase_transition
 from vpm.evaluation.red_team import red_team_replay
 from vpm.evaluation.saturation import evaluate_saturation
 from vpm.retrieval.calibration import evaluate_recall_shift
+from vpm.verifiers.dependence import evaluate_dependence_shift
 
 
 def register_eval_commands(app: typer.Typer) -> None:
@@ -165,6 +166,21 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
                 f"passed={report.passed} "
                 f"source_epsilon={report.source_epsilon:.3f} "
                 f"rebuttal_epsilon={report.rebuttal_epsilon:.3f} "
+                f"shifted_epsilon={report.shifted_epsilon:.3f}"
+            )
+
+    @app.command("eval-dependence-shift")
+    def eval_dependence_shift_command(
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Run dependence residualization calibration under shift."""
+        report = evaluate_dependence_shift()
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"passed={report.passed} "
+                f"epsilon_dep={report.epsilon_dep:.3f} "
                 f"shifted_epsilon={report.shifted_epsilon:.3f}"
             )
 
