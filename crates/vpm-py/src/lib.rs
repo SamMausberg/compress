@@ -24,7 +24,7 @@
 use pyo3::{exceptions::PyValueError, prelude::*};
 use vpm_core::{Contract, RiskVector, Value};
 use vpm_dsl::{c0_add_program, c0_concat_program, c0_eq_program, c0_mul_program, Program};
-use vpm_verify::{run_program, run_program_with_policy, support_guard};
+use vpm_verify::{empirical_bernstein_bounds, run_program, run_program_with_policy, support_guard};
 
 /// The `vpm._native` Python extension module.
 ///
@@ -46,6 +46,7 @@ fn vpm_py_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_c0_typed_json, m)?)?;
     m.add_function(wrap_pyfunction!(run_c0_typed_policy_json, m)?)?;
     m.add_function(wrap_pyfunction!(support_guard_json, m)?)?;
+    m.add_function(wrap_pyfunction!(eb_seq_json, m)?)?;
 
     register_submodule(
         m,
@@ -172,6 +173,32 @@ fn support_guard_json(
         shift_loss,
         selection_loss,
         epsilon_max,
+    );
+    serde_json::to_string_pretty(&report).map_err(json_error)
+}
+
+/// Run the empirical-Bernstein sequence bound from §7 eqs. 125-128.
+#[pyfunction]
+fn eb_seq_json(
+    gains_json: &str,
+    candidates_tested: usize,
+    delta: f64,
+    gain_bound: f64,
+    adapt_loss: f64,
+    drift_loss: f64,
+    leak_loss: f64,
+    selection_loss: f64,
+) -> PyResult<String> {
+    let gains: Vec<f64> = serde_json::from_str(gains_json).map_err(json_error)?;
+    let report = empirical_bernstein_bounds(
+        &gains,
+        candidates_tested,
+        delta,
+        gain_bound,
+        adapt_loss,
+        drift_loss,
+        leak_loss,
+        selection_loss,
     );
     serde_json::to_string_pretty(&report).map_err(json_error)
 }

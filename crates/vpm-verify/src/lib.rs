@@ -45,8 +45,10 @@ use vpm_dsl::{execute, Program};
 use vpm_egraph::{canonicalize, CanonicalProgram};
 use vpm_ledger::{EntryType, LedgerDraft, LedgerSummary};
 
+mod frontier;
 mod support;
 
+pub use frontier::{empirical_bernstein_bounds, EmpiricalBernsteinReport};
 pub use support::{support_guard, SupportAction, SupportGuardReport};
 
 /// Opaque calibrated e-value. Raw pass counts never cross this boundary.

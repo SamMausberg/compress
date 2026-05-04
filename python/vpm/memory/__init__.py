@@ -26,7 +26,40 @@ witness ``W_m`` and a scoped equivalence certificate ``Cert_eq(m)``
 from __future__ import annotations
 
 from vpm.memory.active import MemoryCapsule
+from vpm.memory.active_set import (
+    ActiveSetBudget,
+    ActiveSetItem,
+    ActiveSetSelection,
+    select_active_set,
+)
+from vpm.memory.admit import (
+    AdmissionDecision,
+    AdmissionEvidence,
+    AdmissionThresholds,
+    DemotionEvidence,
+    admit_active,
+    demote_active,
+)
 from vpm.memory.archival import ArchivalMemory
+from vpm.memory.frontier import EmpiricalBernsteinBound, FrontierReport, replay_frontier_report
 from vpm.memory.library import MemoryLibrary, witness_names
 
-__all__ = ["ArchivalMemory", "MemoryCapsule", "MemoryLibrary", "witness_names"]
+__all__ = [
+    "ActiveSetBudget",
+    "ActiveSetItem",
+    "ActiveSetSelection",
+    "AdmissionDecision",
+    "AdmissionEvidence",
+    "AdmissionThresholds",
+    "ArchivalMemory",
+    "DemotionEvidence",
+    "EmpiricalBernsteinBound",
+    "FrontierReport",
+    "MemoryCapsule",
+    "MemoryLibrary",
+    "admit_active",
+    "demote_active",
+    "replay_frontier_report",
+    "select_active_set",
+    "witness_names",
+]

@@ -46,3 +46,13 @@ def support_guard_json(
     selection_loss: float,
     epsilon_max: float,
 ) -> str: ...
+def eb_seq_json(
+    gains_json: str,
+    candidates_tested: int,
+    delta: float,
+    gain_bound: float,
+    adapt_loss: float,
+    drift_loss: float,
+    leak_loss: float,
+    selection_loss: float,
+) -> str: ...

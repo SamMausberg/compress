@@ -5,7 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm.infer import InferenceResult, run_task_candidate
-from vpm.memory import MemoryLibrary
+from vpm.memory import AdmissionDecision, AdmissionEvidence, FrontierReport, MemoryLibrary
+from vpm.memory.admit import admit_active
+from vpm.memory.frontier import replay_frontier_report
 from vpm.substrate.prototype import OPERATIONS
 from vpm.tasks.c5 import C5MacroCandidate, macro_replay_curriculum
 from vpm.verifiers import gate_passed
@@ -24,9 +26,12 @@ class MacroReplayTrace:
     expected_admitted: bool
     admitted: bool
     frontier_delta: float
+    frontier_lcb: float
     sublinear_active_memory: bool
     gate_violations: int
     reasons: tuple[str, ...]
+    frontier: FrontierReport
+    admission: AdmissionDecision
 
     @property
     def demoted(self) -> bool:
@@ -51,9 +56,12 @@ class MacroReplayTrace:
             "admitted": self.admitted,
             "demoted": self.demoted,
             "frontier_delta": self.frontier_delta,
+            "frontier_lcb": self.frontier_lcb,
             "sublinear_active_memory": self.sublinear_active_memory,
             "gate_violations": self.gate_violations,
             "reasons": self.reasons,
+            "frontier": self.frontier.to_dict(),
+            "admission": self.admission.to_dict(),
             "admission_violation": self.admission_violation,
         }
 
@@ -129,12 +137,25 @@ def macro_replay_trace(candidate: C5MacroCandidate) -> MacroReplayTrace:
         run_task_candidate(task, candidate.operation) for task in candidate.replay_tasks
     )
     certified = sum(gate_passed(result.native_report) for result in results)
-    frontier_delta = replay_frontier_delta(certified, len(results))
+    frontier = replay_frontier_report(
+        certified,
+        len(results),
+        enumerative_utility=1.0 / len(OPERATIONS),
+    )
     gate_violations = sum(gate_violation(result) for result in results)
     replay_safe = certified == len(results) and gate_violations == 0
-    would_be_active = int(replay_safe and frontier_delta > 0.0)
+    would_be_active = int(replay_safe and frontier.frontier_delta > 0.0)
     sublinear = 0 < would_be_active < certified
-    admitted = replay_safe and frontier_delta > 0.0 and sublinear
+    admission = admit_active(
+        AdmissionEvidence(
+            frontier_lcb=frontier.bound.lcb,
+            cert_act=replay_safe,
+            cert_eq=1.0 if replay_safe else 0.0,
+            no_capability_escalation=True,
+            replay_pass=replay_safe,
+        )
+    )
+    admitted = admission.admitted and sublinear
     memory = admit_macro(candidate, results) if admitted else MemoryLibrary()
     return MacroReplayTrace(
         candidate_id=candidate.task_id,
@@ -145,10 +166,13 @@ def macro_replay_trace(candidate: C5MacroCandidate) -> MacroReplayTrace:
         active_memory=len(memory.active),
         expected_admitted=candidate.expected_admitted,
         admitted=admitted,
-        frontier_delta=frontier_delta,
+        frontier_delta=frontier.frontier_delta,
+        frontier_lcb=frontier.bound.lcb,
         sublinear_active_memory=sublinear,
         gate_violations=gate_violations,
-        reasons=macro_replay_reasons(replay_safe, frontier_delta, sublinear),
+        reasons=macro_replay_reasons(admission, sublinear),
+        frontier=frontier,
+        admission=admission,
     )
 
 
@@ -165,11 +189,11 @@ def admit_macro(
 
 def replay_frontier_delta(certified: int, replay_tasks: int) -> float:
     """Compare one-candidate macro utility to full enumerative utility."""
-    if replay_tasks == 0:
-        return 0.0
-    macro_utility = certified / replay_tasks
-    enumerative_utility = 1.0 / len(OPERATIONS)
-    return macro_utility - enumerative_utility
+    return replay_frontier_report(
+        certified,
+        replay_tasks,
+        enumerative_utility=1.0 / len(OPERATIONS),
+    ).frontier_delta
 
 
 def gate_violation(result: InferenceResult) -> bool:
@@ -178,17 +202,9 @@ def gate_violation(result: InferenceResult) -> bool:
     return not passed and result.rendered != "refusal"
 
 
-def macro_replay_reasons(
-    replay_safe: bool,
-    frontier_delta: float,
-    sublinear: bool,
-) -> tuple[str, ...]:
+def macro_replay_reasons(admission: AdmissionDecision, sublinear: bool) -> tuple[str, ...]:
     """Collect failed macro admission reasons."""
-    reasons: list[str] = []
-    if not replay_safe:
-        reasons.append("replay gate failed")
-    if frontier_delta <= 0.0:
-        reasons.append("frontier did not improve")
+    reasons = list(admission.reasons)
     if not sublinear:
         reasons.append("active memory growth not sublinear")
     return tuple(reasons)
