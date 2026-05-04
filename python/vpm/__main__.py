@@ -15,8 +15,9 @@ from typing import Annotated
 import typer
 
 from . import __version__
+from ._cli import prototype_summary, training_summary
 from .diagnostics import collect_diagnostics
-from .evaluation import evaluate_c0, evaluate_c1, evaluate_c2, evaluate_c3, evaluate_c4
+from .evaluation import evaluate_c0, evaluate_c1, evaluate_c2, evaluate_c3, evaluate_c4, evaluate_c5
 from .infer import run_c0_add, run_task
 from .substrate import load_prototype
 from .tasks import stages, typed_hidden_task, typed_task
@@ -37,19 +38,6 @@ app = typer.Typer(
     help="VPM-5.3 reference implementation. See docs/architecture/.",
     no_args_is_help=True,
 )
-
-
-def prototype_summary(report) -> str:
-    return (
-        f"solve_rate={report.solve_rate:.3f} "
-        f"op_acc={report.operation_accuracy:.3f} "
-        f"compression={report.compression_ratio:.3f} "
-        f"frontier_delta={report.compression.frontier_delta_vs_enumerative:.3f}"
-    )
-
-
-def training_summary(report) -> str:
-    return f"{prototype_summary(report.heldout)} artifact={report.artifact}"
 
 
 @app.command()
@@ -201,6 +189,22 @@ def eval_c4_command(
         typer.echo(
             f"render_rate={report.render_rate:.3f} "
             f"refusal_rate={report.refusal_rate:.3f} "
+            f"violations={report.violations}"
+        )
+
+
+@app.command("eval-c5")
+def eval_c5_command(
+    as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+) -> None:
+    """Run C5 replay-safe macro admission and demotion probes."""
+    report = evaluate_c5()
+    if as_json:
+        typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    else:
+        typer.echo(
+            f"admission_rate={report.admission_rate:.3f} "
+            f"demoted={report.demoted} "
             f"violations={report.violations}"
         )
 

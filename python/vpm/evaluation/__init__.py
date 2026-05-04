@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm._reports import float_field, object_map
+from vpm.evaluation.compression import CompressionReplayReport, evaluate_c5
 from vpm.evaluation.dialogue import DialogueEvaluationReport, evaluate_c4
 from vpm.infer import InferenceResult, run_task, run_task_candidate
 from vpm.tasks.c0 import C0Task, curriculum
@@ -343,6 +344,7 @@ def mean(values: list[float]) -> float:
 
 __all__ = [
     "ActiveEvaluationReport",
+    "CompressionReplayReport",
     "DialogueEvaluationReport",
     "EvaluationReport",
     "EvidenceMetrics",
@@ -354,6 +356,7 @@ __all__ = [
     "evaluate_c2",
     "evaluate_c3",
     "evaluate_c4",
+    "evaluate_c5",
     "evidence_metrics",
     "policy_gate_trace",
     "summarize",

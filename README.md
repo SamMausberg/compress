@@ -111,6 +111,7 @@ uv run vpm eval-c1 --json
 uv run vpm eval-c2 --json
 uv run vpm eval-c3 --json
 uv run vpm eval-c4 --json
+uv run vpm eval-c5 --json
 uv run vpm train-c0 --epochs 80 --json
 uv run vpm eval-prototype --json
 uv run vpm train-c1 --epochs 80 --json
@@ -168,6 +169,9 @@ when labels or componentwise risk exceed the contract.
 The C4 executable subset adds controlled source-grounded dialogue:
 `eval-c4 --json` renders only answers with source, rebuttal, entailment, and
 round-trip realization witnesses; contradicted answers are refused.
+The C5 executable subset adds replay-safe macro admission:
+`eval-c5 --json` admits only macros that certify every replay task, improve
+the candidate-cost frontier, and keep active memory growth sublinear.
 The example scripts mirror this: `examples/vpm0/run.py` prints runtime
 diagnostics plus C0 inference/evaluation, and `examples/vpm0/train.py`
 prints C0/C1 training reports, reloaded evaluations, learned inference, and

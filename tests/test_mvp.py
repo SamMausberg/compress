@@ -7,7 +7,14 @@ import subprocess
 import sys
 
 from vpm import _native
-from vpm.evaluation import evaluate_c0, evaluate_c1, evaluate_c2, evaluate_c3, evaluate_c4
+from vpm.evaluation import (
+    evaluate_c0,
+    evaluate_c1,
+    evaluate_c2,
+    evaluate_c3,
+    evaluate_c4,
+    evaluate_c5,
+)
 from vpm.infer import run_c0_add, run_task, run_task_candidate
 from vpm.memory import MemoryLibrary
 from vpm.tasks import (
@@ -20,6 +27,7 @@ from vpm.tasks import (
     equality_task,
     gate_dialogue,
     hidden_schema_curriculum,
+    macro_replay_curriculum,
     multiplication_task,
     policy_probe_curriculum,
     schema_split,
@@ -204,6 +212,20 @@ def test_c4_dialogue_gates_require_source_rebuttal_and_realization() -> None:
     assert metrics.realization_ok_rate == 1.0
 
 
+def test_c5_macro_replay_admits_only_safe_compressive_macros() -> None:
+    metrics = evaluate_c5(macro_replay_curriculum())
+    assert metrics.admitted == 3
+    assert metrics.demoted == 1
+    assert metrics.violations == 0
+    assert metrics.frontier_movement_rate == 0.75
+    assert all(trace.sublinear_active_memory for trace in metrics.traces if trace.admitted)
+
+    rejected = [trace for trace in metrics.traces if not trace.expected_admitted]
+    assert rejected[0].admitted is False
+    assert rejected[0].certified == 0
+    assert "replay gate failed" in rejected[0].reasons
+
+
 def test_all_curriculum_modules_have_runtime_metadata() -> None:
     specs = stages()
     assert [spec.name for spec in specs] == ["C0", "C1", "C2", "C3", "C4", "C5"]
@@ -212,6 +234,7 @@ def test_all_curriculum_modules_have_runtime_metadata() -> None:
     assert specs[2].executable is True
     assert specs[3].executable is True
     assert specs[4].executable is True
+    assert specs[5].executable is True
     assert all(spec.implemented_components for spec in specs)
 
 
@@ -305,6 +328,19 @@ def test_cli_runs_c4_dialogue_evaluation() -> None:
     payload = json.loads(completed.stdout)
     assert payload["rendered"] == 2
     assert payload["refused"] == 1
+    assert payload["violation_rate"] == 0.0
+
+
+def test_cli_runs_c5_macro_replay_evaluation() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "vpm", "eval-c5", "--json"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(completed.stdout)
+    assert payload["admitted"] == 3
+    assert payload["demoted"] == 1
     assert payload["violation_rate"] == 0.0
 
 
