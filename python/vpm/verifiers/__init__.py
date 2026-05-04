@@ -36,7 +36,12 @@ from vpm.compiler import CompiledProgram
 
 def native_c0_report(compiled: CompiledProgram) -> dict[str, object]:
     """Run the native exact verifier/gate path for a compiled C0 task."""
-    raw = _native.run_c0_add_json(compiled.left, compiled.right, compiled.expected)
+    raw = _native.run_c0_arith_json(
+        compiled.operation,
+        compiled.left,
+        compiled.right,
+        compiled.expected,
+    )
     return cast(dict[str, object], json.loads(raw))
 
 

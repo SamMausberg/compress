@@ -226,25 +226,42 @@ fn pop_ints(stack: &mut Vec<Value>, op: &'static str) -> Result<(i64, i64), DslE
 
 /// Convenient C0 arithmetic program.
 pub fn c0_add_program(left: i64, right: i64) -> Program {
+    c0_binary_program("add", left, right, Instruction::Add)
+}
+
+/// Convenient C0 multiplication program.
+pub fn c0_mul_program(left: i64, right: i64) -> Program {
+    c0_binary_program("mul", left, right, Instruction::Mul)
+}
+
+fn c0_binary_program(operation: &str, left: i64, right: i64, instruction: Instruction) -> Program {
     Program::new(
-        format!("add-{left}-{right}"),
+        format!("{operation}-{left}-{right}"),
         vec![
             Instruction::Push(Value::Int(left)),
             Instruction::Push(Value::Int(right)),
-            Instruction::Add,
+            instruction,
         ],
     )
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{c0_add_program, execute};
+    use super::{c0_add_program, c0_mul_program, execute};
     use vpm_core::Value;
 
     #[test]
     fn executes_add_program_with_ledger() {
         let report = execute(&c0_add_program(2, 3)).expect("program executes");
         assert_eq!(report.value, Value::Int(5));
+        assert_eq!(report.ledger.entries().len(), 4);
+        assert_eq!(report.trace.edges.len(), 2);
+    }
+
+    #[test]
+    fn executes_mul_program_with_ledger() {
+        let report = execute(&c0_mul_program(6, 7)).expect("program executes");
+        assert_eq!(report.value, Value::Int(42));
         assert_eq!(report.ledger.entries().len(), 4);
         assert_eq!(report.trace.edges.len(), 2);
     }

@@ -31,7 +31,7 @@ in adversarial suites.
 
 from __future__ import annotations
 
-from vpm.tasks.c0 import C0Task, addition_task, curriculum
+from vpm.tasks.c0 import C0Task, addition_task, arithmetic_task, curriculum, multiplication_task
 from vpm.tasks.c0 import stage_spec as c0_stage
 from vpm.tasks.c1 import stage_spec as c1_stage
 from vpm.tasks.c2 import stage_spec as c2_stage
@@ -46,4 +46,12 @@ def stages() -> tuple[StageSpec, ...]:
     return (c0_stage(), c1_stage(), c2_stage(), c3_stage(), c4_stage(), c5_stage())
 
 
-__all__ = ["C0Task", "StageSpec", "addition_task", "curriculum", "stages"]
+__all__ = [
+    "C0Task",
+    "StageSpec",
+    "addition_task",
+    "arithmetic_task",
+    "curriculum",
+    "multiplication_task",
+    "stages",
+]

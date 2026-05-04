@@ -85,7 +85,9 @@ def run_task(task: C0Task, memory: MemoryLibrary | None = None) -> InferenceResu
     report = native_c0_report(compiled)
     route = native_route(report)
     value = native_value(report)
-    rendered = render_certified(value, certificate_score(report)) if gate_passed(report) else "refusal"
+    rendered = (
+        render_certified(value, certificate_score(report)) if gate_passed(report) else "refusal"
+    )
     library.admit(task.task_id, value, report)
     return InferenceResult(
         task_id=task.task_id,

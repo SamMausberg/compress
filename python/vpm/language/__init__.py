@@ -50,14 +50,14 @@ class NormalForm:
 def normalize(observation: str) -> NormalForm:
     """Normalize a compact C0 observation such as ``add 2 3``."""
     parts = observation.strip().split()
-    if len(parts) == 3 and parts[0] == "add":
+    if len(parts) == 3 and parts[0] in {"add", "mul"}:
         try:
             int(parts[1])
             int(parts[2])
         except ValueError:
             return NormalForm("unknown", (), 1.0, 1.0, 1.0, "Please provide integers.")
-        return NormalForm("compute", (f"add({parts[1]},{parts[2]})",), 0.0, 0.0, 0.0)
-    return NormalForm("unknown", (), 1.0, 1.0, 1.0, "Please provide an add task.")
+        return NormalForm("compute", (f"{parts[0]}({parts[1]},{parts[2]})",), 0.0, 0.0, 0.0)
+    return NormalForm("unknown", (), 1.0, 1.0, 1.0, "Please provide an add or mul task.")
 
 
 def render_certified(value: object, certificate_score: float) -> str:

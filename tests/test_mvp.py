@@ -8,7 +8,8 @@ import sys
 
 from vpm import _native
 from vpm.evaluation import evaluate_c0
-from vpm.infer import run_c0_add
+from vpm.infer import run_c0_add, run_task
+from vpm.tasks import multiplication_task
 from vpm.tasks import stages
 from vpm.training import allocate_budget
 
@@ -27,6 +28,13 @@ def test_wrong_expected_value_fails_gate() -> None:
     assert result.route == "solve"
     assert result.rendered == "refusal"
     assert result.native_report["gate"]["passed"] is False
+
+
+def test_multiplication_flows_through_native_vertical_slice() -> None:
+    result = run_task(multiplication_task(6, 7))
+    assert result.route == "solve"
+    assert result.rendered.startswith("42 ")
+    assert result.native_report["verification"]["passed"] is True
 
 
 def test_evaluation_and_budget_are_connected() -> None:

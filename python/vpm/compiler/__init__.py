@@ -52,13 +52,25 @@ def cnf_posterior(task: C0Task | str) -> NormalForm:
 
 def compile_task(task: C0Task) -> CompiledProgram:
     """Compile a C0 task into the executable native program boundary."""
-    normal_form = cnf_posterior(task)
+    return compile_candidate(task, task.operation)
+
+
+def compile_candidate(task: C0Task, operation: str) -> CompiledProgram:
+    """Compile a C0 task with a proposed executable operation."""
+    candidate = C0Task(
+        task_id=task.task_id,
+        left=task.left,
+        right=task.right,
+        expected=task.expected,
+        operation=operation,
+    )
+    normal_form = cnf_posterior(candidate)
     if not normal_form.ok:
         msg = normal_form.ask or "task is not in the C0 executable language"
         raise ValueError(msg)
     return CompiledProgram(
         task_id=task.task_id,
-        operation=task.operation,
+        operation=operation,
         left=task.left,
         right=task.right,
         expected=task.expected,
@@ -66,4 +78,4 @@ def compile_task(task: C0Task) -> CompiledProgram:
     )
 
 
-__all__ = ["CompiledProgram", "cnf_posterior", "compile_task"]
+__all__ = ["CompiledProgram", "cnf_posterior", "compile_candidate", "compile_task"]

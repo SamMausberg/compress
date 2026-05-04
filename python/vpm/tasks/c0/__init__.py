@@ -39,6 +39,27 @@ def addition_task(left: int, right: int, expected: int | None = None) -> C0Task:
     return C0Task(task_id=f"c0-add-{left}-{right}", left=left, right=right, expected=answer)
 
 
+def multiplication_task(left: int, right: int, expected: int | None = None) -> C0Task:
+    """Build a deterministic multiplication task with an exact expected answer."""
+    answer = left * right if expected is None else expected
+    return C0Task(
+        task_id=f"c0-mul-{left}-{right}",
+        left=left,
+        right=right,
+        expected=answer,
+        operation="mul",
+    )
+
+
+def arithmetic_task(operation: str, left: int, right: int, expected: int | None = None) -> C0Task:
+    """Build a supported C0 arithmetic task."""
+    if operation == "add":
+        return addition_task(left, right, expected)
+    if operation == "mul":
+        return multiplication_task(left, right, expected)
+    raise ValueError(f"unsupported C0 arithmetic operation: {operation}")
+
+
 def curriculum() -> list[C0Task]:
     """Small local C0 curriculum used by examples and tests."""
     return [
@@ -58,4 +79,11 @@ def stage_spec() -> StageSpec:
     )
 
 
-__all__ = ["C0Task", "addition_task", "curriculum", "stage_spec"]
+__all__ = [
+    "C0Task",
+    "addition_task",
+    "arithmetic_task",
+    "curriculum",
+    "multiplication_task",
+    "stage_spec",
+]

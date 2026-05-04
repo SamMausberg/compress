@@ -23,7 +23,7 @@
 
 use pyo3::{exceptions::PyValueError, prelude::*};
 use vpm_core::{Contract, Value};
-use vpm_dsl::c0_add_program;
+use vpm_dsl::{c0_add_program, c0_mul_program};
 use vpm_verify::run_program;
 
 /// The `vpm._native` Python extension module.
@@ -42,6 +42,7 @@ fn vpm_py_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_function(wrap_pyfunction!(c0_contract_json, m)?)?;
     m.add_function(wrap_pyfunction!(run_c0_add_json, m)?)?;
+    m.add_function(wrap_pyfunction!(run_c0_arith_json, m)?)?;
 
     register_submodule(
         m,
@@ -92,6 +93,22 @@ fn c0_contract_json() -> PyResult<String> {
 #[pyfunction]
 fn run_c0_add_json(left: i64, right: i64, expected: i64) -> PyResult<String> {
     let program = c0_add_program(left, right);
+    let report = run_program(&program, Value::Int(expected)).map_err(PyValueError::new_err)?;
+    serde_json::to_string_pretty(&report).map_err(json_error)
+}
+
+/// Run a Rust C0 arithmetic candidate through canonicalize → execute → verify → gate.
+#[pyfunction]
+fn run_c0_arith_json(operation: &str, left: i64, right: i64, expected: i64) -> PyResult<String> {
+    let program = match operation {
+        "add" => c0_add_program(left, right),
+        "mul" => c0_mul_program(left, right),
+        _ => {
+            return Err(PyValueError::new_err(format!(
+                "unsupported C0 arithmetic operation: {operation}"
+            )));
+        }
+    };
     let report = run_program(&program, Value::Int(expected)).map_err(PyValueError::new_err)?;
     serde_json::to_string_pretty(&report).map_err(json_error)
 }

@@ -72,7 +72,9 @@ def summarize(results: list[InferenceResult]) -> EvaluationReport:
     return EvaluationReport(
         tasks=len(results),
         solved=solved,
-        gate_violations=sum(1 for result in results if result.route == "solve" and not result.rendered),
+        gate_violations=sum(
+            1 for result in results if result.route == "solve" and not result.rendered
+        ),
         mean_certificate=sum(scores) / len(scores) if scores else 0.0,
         active_memory_growth=sum(result.memory_active for result in results),
     )

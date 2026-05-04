@@ -264,7 +264,7 @@ pub fn run_program(program: &Program, expected: Value) -> Result<VerticalSliceRe
 mod tests {
     use super::run_program;
     use vpm_core::Value;
-    use vpm_dsl::c0_add_program;
+    use vpm_dsl::{c0_add_program, c0_mul_program};
 
     #[test]
     fn vertical_slice_passes_exact_addition() {
@@ -279,5 +279,13 @@ mod tests {
         let report = run_program(&c0_add_program(2, 3), Value::Int(6)).expect("runs");
         assert!(!report.verification.passed);
         assert!(!report.gate.passed);
+    }
+
+    #[test]
+    fn vertical_slice_passes_exact_multiplication() {
+        let report = run_program(&c0_mul_program(6, 7), Value::Int(42)).expect("runs");
+        assert!(report.verification.passed);
+        assert!(report.gate.passed);
+        assert_eq!(report.ledger.entries, 6);
     }
 }
