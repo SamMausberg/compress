@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from vpm.evaluation import evaluate_c2, evaluate_c3, evaluate_c4, evaluate_c5
+from vpm.training.splits import SplitAssignment
 
 
 class FailureMode(StrEnum):
@@ -13,6 +14,7 @@ class FailureMode(StrEnum):
 
     SUPPORT_GUARD_BYPASS = "support_guard_bypass"
     STAGE_SCHEDULER_BYPASS = "stage_scheduler_bypass"
+    SPLIT_LEAKAGE_BYPASS = "split_leakage_bypass"
     SAFETY_GATE_BYPASS = "safety_gate_bypass"
     DIALOGUE_GATE_BYPASS = "dialogue_gate_bypass"
     OPAQUE_MACRO_ADMISSION = "opaque_macro_admission"
@@ -25,7 +27,7 @@ UNCOVERED_CRITERION1_CLAUSES = (
     "open-domain context and semantic ambiguity collapse",
     "source/rebuttal recall miss calibration under shift",
     "entailment false-support attacks outside controlled corpus",
-    "dependence residualization and split-leakage inflation",
+    "dependence residualization calibration under shift",
     "hidden test-time compute accounting",
     "external LLM cognitive-component dependence",
 )
@@ -81,6 +83,17 @@ def evaluate_failure_modes() -> FailureModeReport:
     c3 = evaluate_c3()
     c4 = evaluate_c4()
     c5 = evaluate_c5()
+    clean_split = SplitAssignment(
+        generator=frozenset({"gen"}),
+        verifier_train=frozenset({"train"}),
+        verifier_calibration=frozenset({"cal"}),
+        audit=frozenset({"audit"}),
+    )
+    dirty_split = SplitAssignment(
+        generator=frozenset({"shared"}),
+        verifier_train=frozenset({"shared"}),
+        audit=frozenset({"shared"}),
+    )
     return FailureModeReport(
         checks=(
             FailureCheck(
@@ -95,6 +108,11 @@ def evaluate_failure_modes() -> FailureModeReport:
                 FailureMode.STAGE_SCHEDULER_BYPASS,
                 c2.program_entry_rate < c2.solve_rate,
                 (f"program_entry_rate={c2.program_entry_rate:.3f} solve_rate={c2.solve_rate:.3f}"),
+            ),
+            FailureCheck(
+                FailureMode.SPLIT_LEAKAGE_BYPASS,
+                not clean_split.clean or dirty_split.clean,
+                (f"clean_split={clean_split.clean} dirty_violations={dirty_split.violations()}"),
             ),
             FailureCheck(
                 FailureMode.SAFETY_GATE_BYPASS,
