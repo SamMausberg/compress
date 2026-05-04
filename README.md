@@ -164,8 +164,9 @@ clearance, and realization-loss rates in their `evidence` blocks.
 The C2 executable subset adds active tests for partial observations:
 `eval-c2 --json` shows candidate support before/after the active test,
 the calibrated support-guard decision, uncertainty-action score, halt/EVC
-decision, any rehydrated candidates, and then routes accepted selected
-operations through the same verifier gate.
+decision, `iota -> sigma -> pi` stage-scheduler trace, any rehydrated
+candidates, and then routes accepted selected operations through the same
+verifier gate.
 The C3 executable subset adds adversarial authority/risk probes:
 `eval-c3 --json` checks that exactly verified actions are still rejected
 when labels or componentwise risk exceed the contract.
@@ -174,10 +175,20 @@ The C4 executable subset adds controlled source-grounded dialogue:
 round-trip realization witnesses; contradicted answers are refused.
 The C5 executable subset adds replay-safe macro admission:
 `eval-c5 --json` admits only macros that certify every replay task, improve
-the candidate-cost frontier, and keep active memory growth sublinear.
+the candidate-cost frontier under the sequence-valid empirical-Bernstein
+bound, satisfy the explicit active-memory admission rule, and keep active
+memory growth sublinear.
+The M5 training controls are executable scalar kernels rather than a full
+optimizer: split hygiene, certified teacher posterior filtering, loss
+accounting, weight balancing, block-coordinate scheduling, budget diagnostics,
+GFlowNet reward/trajectory-balance helpers, and active-query selection all
+have sanity coverage.
 `eval-failures --json` runs the currently executable Criterion-1
 failure-mode detectors and lists the remaining Criterion-1 clauses that are
 not yet covered by the shipped C0-C5 subset.
+`eval-ablations --json` turns off key controls and verifies that the expected
+regressions appear; `eval-red-team --json` combines those ablations with the
+failure-mode suite for the M6 replay harness.
 The example scripts mirror this: `examples/vpm0/run.py` prints runtime
 diagnostics plus C0 inference/evaluation, and `examples/vpm0/train.py`
 prints C0/C1 training reports, reloaded evaluations, learned inference, and
