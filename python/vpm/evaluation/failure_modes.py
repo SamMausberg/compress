@@ -12,6 +12,7 @@ class FailureMode(StrEnum):
     """Executable subset of Criterion 1 failure clauses."""
 
     SUPPORT_GUARD_BYPASS = "support_guard_bypass"
+    STAGE_SCHEDULER_BYPASS = "stage_scheduler_bypass"
     SAFETY_GATE_BYPASS = "safety_gate_bypass"
     DIALOGUE_GATE_BYPASS = "dialogue_gate_bypass"
     OPAQUE_MACRO_ADMISSION = "opaque_macro_admission"
@@ -89,6 +90,11 @@ def evaluate_failure_modes() -> FailureModeReport:
                     f"support_guard_pass_rate={c2.support_guard_pass_rate:.3f} "
                     f"rehydrated={c2.rehydrated}"
                 ),
+            ),
+            FailureCheck(
+                FailureMode.STAGE_SCHEDULER_BYPASS,
+                c2.program_entry_rate < c2.solve_rate,
+                (f"program_entry_rate={c2.program_entry_rate:.3f} solve_rate={c2.solve_rate:.3f}"),
             ),
             FailureCheck(
                 FailureMode.SAFETY_GATE_BYPASS,

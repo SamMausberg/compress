@@ -5,7 +5,14 @@ from __future__ import annotations
 import pytest
 
 from vpm.evaluation import evaluate_c2
-from vpm.infer import halt_decision, run_task_candidate, select_test
+from vpm.infer import (
+    InferenceStage,
+    StageTransition,
+    halt_decision,
+    run_task_candidate,
+    schedule_stages,
+    select_test,
+)
 from vpm.infer.support_guard import guard_support
 from vpm.infer.test_select import TestAction as ActiveTestAction
 from vpm.tasks import active_curriculum, active_test
@@ -30,10 +37,12 @@ def test_c2_active_tests_reduce_support_and_certify() -> None:
     assert metrics.rehydrated == 0
     assert metrics.mean_test_score > 0.0
     assert metrics.halt_rate == 1.0
+    assert metrics.program_entry_rate == 1.0
     assert metrics.mean_candidates_after == 1.0
     assert metrics.to_dict()["support_guards"][0]["passed"] is True
     assert metrics.to_dict()["test_selections"][0]["selected"]["name"] == "active-reveal-expected"
     assert metrics.to_dict()["halt_decisions"][0]["reason"] == "contract_met"
+    assert metrics.to_dict()["stage_schedules"][0]["final_stage"] == "pi"
     assert metrics.to_dict()["verifier"]["evidence"]["source_coverage_rate"] == 1.0
 
 
@@ -74,3 +83,46 @@ def test_support_guard_rehydrates_unsafe_pruning() -> None:
     assert report.rehydrated == ("mul", "eq")
     assert report.candidates_final == ("add", "mul", "eq")
     assert report.epsilon_prune > report.epsilon_max
+
+
+def test_stage_scheduler_requires_positive_adjacent_transitions() -> None:
+    trace = schedule_stages(
+        (
+            StageTransition(
+                "to-sketch",
+                InferenceStage.INVARIANT,
+                InferenceStage.SKETCH,
+                expected_cert_gain=1.0,
+                expected_utility_gain=0.5,
+                cost_delta=0.1,
+            ),
+            StageTransition(
+                "too-expensive-program",
+                InferenceStage.SKETCH,
+                InferenceStage.PROGRAM,
+                expected_cert_gain=0.1,
+                expected_utility_gain=0.1,
+                cost_delta=1.0,
+            ),
+        )
+    )
+    assert trace.final_stage is InferenceStage.SKETCH
+    assert trace.decisions[0].entered is True
+    assert trace.decisions[1].reason == "non_positive_value"
+
+    residual = schedule_stages(
+        (
+            StageTransition(
+                "unverified-residual",
+                InferenceStage.PROGRAM,
+                InferenceStage.RESIDUAL,
+                expected_cert_gain=1.0,
+                expected_utility_gain=1.0,
+                cost_delta=0.1,
+            ),
+        ),
+        start=InferenceStage.PROGRAM,
+    )
+    assert residual.final_stage is InferenceStage.RESIDUAL
+    assert residual.decisions[0].residual_escrowed is True
+    assert residual.decisions[0].certificate_cap == 0.0

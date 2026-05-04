@@ -30,6 +30,14 @@ from dataclasses import asdict, dataclass, field
 from vpm._reports import object_map
 from vpm.compiler import CompiledProgram, compile_candidate, compile_task
 from vpm.infer.halt import HaltDecision, HaltWeights, halt_decision
+from vpm.infer.staging import (
+    InferenceStage,
+    StageScheduleTrace,
+    StageTransition,
+    StageTransitionDecision,
+    StageWeights,
+    schedule_stages,
+)
 from vpm.infer.support_guard import SupportGuardReport, guard_support
 from vpm.infer.test_select import (
     TestAction,
@@ -180,6 +188,11 @@ __all__ = [
     "HaltDecision",
     "HaltWeights",
     "InferenceResult",
+    "InferenceStage",
+    "StageScheduleTrace",
+    "StageTransition",
+    "StageTransitionDecision",
+    "StageWeights",
     "SupportGuardReport",
     "TestAction",
     "TestSelectionTrace",
@@ -191,6 +204,7 @@ __all__ = [
     "run_c0_add",
     "run_task",
     "run_task_candidate",
+    "schedule_stages",
     "select_test",
     "support_reduction_action",
 ]

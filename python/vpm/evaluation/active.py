@@ -7,11 +7,15 @@ from dataclasses import dataclass
 from vpm.evaluation import EvaluationReport, summarize
 from vpm.infer import (
     HaltDecision,
+    InferenceStage,
+    StageScheduleTrace,
+    StageTransition,
     SupportGuardReport,
     TestSelectionTrace,
     guard_support,
     halt_decision,
     run_task_candidate,
+    schedule_stages,
     select_test,
     support_reduction_action,
 )
@@ -28,6 +32,7 @@ class ActiveEvaluationReport:
     support_guards: tuple[SupportGuardReport, ...]
     test_selections: tuple[TestSelectionTrace, ...]
     halt_decisions: tuple[HaltDecision, ...]
+    stage_schedules: tuple[StageScheduleTrace, ...]
 
     @property
     def solve_rate(self) -> float:
@@ -72,6 +77,12 @@ class ActiveEvaluationReport:
         halted = sum(decision.should_halt for decision in self.halt_decisions)
         return halted / len(self.halt_decisions) if self.halt_decisions else 0.0
 
+    @property
+    def program_entry_rate(self) -> float:
+        """Fraction of traces that reached executable program resolution."""
+        reached = sum(schedule.reached(InferenceStage.PROGRAM) for schedule in self.stage_schedules)
+        return reached / len(self.stage_schedules) if self.stage_schedules else 0.0
+
     def to_dict(self) -> dict[str, object]:
         """JSON-friendly active-test report."""
         return {
@@ -82,6 +93,7 @@ class ActiveEvaluationReport:
             "rehydrated": self.rehydrated,
             "mean_test_score": self.mean_test_score,
             "halt_rate": self.halt_rate,
+            "program_entry_rate": self.program_entry_rate,
             "mean_candidates_before": self.mean_candidates_before,
             "mean_candidates_after": self.mean_candidates_after,
             "verifier": self.verifier.to_dict(),
@@ -89,6 +101,7 @@ class ActiveEvaluationReport:
             "support_guards": [guard.to_dict() for guard in self.support_guards],
             "test_selections": [selection.to_dict() for selection in self.test_selections],
             "halt_decisions": [decision.to_dict() for decision in self.halt_decisions],
+            "stage_schedules": [schedule.to_dict() for schedule in self.stage_schedules],
         }
 
 
@@ -102,6 +115,7 @@ def evaluate_c2(
     support_guards = support_guard_traces(traces)
     test_selections = test_selection_traces(traces, support_guards)
     halt_decisions = halt_traces(support_guards, test_selections)
+    stage_schedules = stage_schedule_traces(traces, support_guards, test_selections)
     results = [
         run_task_candidate(task.to_c0_task(trace.selected_operation), trace.selected_operation)
         for task, trace, guard, decision in zip(
@@ -120,6 +134,7 @@ def evaluate_c2(
         support_guards=support_guards,
         test_selections=test_selections,
         halt_decisions=halt_decisions,
+        stage_schedules=stage_schedules,
     )
 
 
@@ -171,6 +186,38 @@ def halt_traces(
             best_action_score=selection.selected_score,
         )
         for guard, selection in zip(guards, selections, strict=True)
+    )
+
+
+def stage_schedule_traces(
+    traces: tuple[ActiveTestTrace, ...],
+    guards: tuple[SupportGuardReport, ...],
+    selections: tuple[TestSelectionTrace, ...],
+) -> tuple[StageScheduleTrace, ...]:
+    """Build staged-resolution traces for active C2 tasks."""
+    return tuple(
+        schedule_stages(
+            (
+                StageTransition(
+                    "partial-observation-invariants",
+                    InferenceStage.INVARIANT,
+                    InferenceStage.SKETCH,
+                    expected_cert_gain=0.25,
+                    expected_utility_gain=0.25 if trace.candidates_before else 0.0,
+                    cost_delta=0.1,
+                ),
+                StageTransition(
+                    "active-test-program-resolution",
+                    InferenceStage.SKETCH,
+                    InferenceStage.PROGRAM,
+                    expected_cert_gain=guard.certificate if guard.passed else 0.0,
+                    expected_utility_gain=selection.selected_score if guard.passed else 0.0,
+                    cost_delta=selection.selected.cost,
+                    support_delta=guard.epsilon_prune,
+                ),
+            )
+        )
+        for trace, guard, selection in zip(traces, guards, selections, strict=True)
     )
 
 
