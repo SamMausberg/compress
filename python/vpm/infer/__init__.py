@@ -95,7 +95,20 @@ def run_task_candidate(
 
     retrieval = retrieve(compiled)
     substrate = encode_update(compiled)
-    report = native_c0_report(compiled)
+    try:
+        report = native_c0_report(compiled)
+    except ValueError as exc:
+        return InferenceResult(
+            task.task_id,
+            "abstain",
+            "refusal",
+            compiled,
+            retrieval,
+            substrate,
+            {},
+            len(library.active),
+            [str(exc)],
+        )
     route = native_route(report)
     value = native_value(report)
     rendered = (

@@ -1,4 +1,4 @@
-"""Trainable non-transformer substrate prototype for C0 arithmetic."""
+"""Trainable non-transformer substrate prototype for C0 typed tasks."""
 
 from __future__ import annotations
 
@@ -10,10 +10,11 @@ import numpy as np
 import torch
 from torch import nn
 
-from vpm.tasks.c0 import C0Task
+from vpm.tasks.c0 import C0Task, C0Value
 
-OPERATIONS = ("add", "mul")
-FEATURES = len(OPERATIONS) + 2
+OPERATIONS = ("add", "mul", "concat", "eq")
+VALUE_KINDS = ("int", "text", "bool")
+FEATURES = len(OPERATIONS) + len(VALUE_KINDS) + 3
 
 
 @dataclass(frozen=True)
@@ -51,14 +52,38 @@ class ArithmeticProposalNet(nn.Module):
 
 
 def event_tensor(task: C0Task, scale: float, device: torch.device) -> torch.Tensor:
-    """Encode one typed arithmetic task as operation/argument events."""
+    """Encode one typed C0 task as operation/argument events."""
     events = torch.zeros((3, FEATURES), dtype=torch.float32, device=device)
     events[0, operation_index(task.operation)] = 1.0
-    events[1, len(OPERATIONS)] = float(task.left) / scale
-    events[1, len(OPERATIONS) + 1] = -1.0 if task.left < 0 else 1.0
-    events[2, len(OPERATIONS)] = float(task.right) / scale
-    events[2, len(OPERATIONS) + 1] = -1.0 if task.right < 0 else 1.0
+    fill_value_features(events[1], task.left, scale)
+    fill_value_features(events[2], task.right, scale)
     return events
+
+
+def fill_value_features(row: torch.Tensor, value: C0Value, scale: float) -> None:
+    """Fill one operand row with type and compact value features."""
+    type_offset = len(OPERATIONS)
+    scalar_offset = type_offset + len(VALUE_KINDS)
+    if isinstance(value, bool):
+        row[type_offset + VALUE_KINDS.index("bool")] = 1.0
+        row[scalar_offset] = 1.0 if value else 0.0
+        return
+    if isinstance(value, int):
+        row[type_offset + VALUE_KINDS.index("int")] = 1.0
+        row[scalar_offset] = abs(float(value)) / scale
+        row[scalar_offset + 1] = -1.0 if value < 0 else 1.0
+        return
+    row[type_offset + VALUE_KINDS.index("text")] = 1.0
+    row[scalar_offset] = len(value) / scale
+    row[scalar_offset + 2] = stable_text_feature(value)
+
+
+def stable_text_feature(value: str) -> float:
+    """Return a deterministic bounded text feature."""
+    if not value:
+        return 0.0
+    total = sum((index + 1) * ord(char) for index, char in enumerate(value))
+    return (total % 997) / 997.0
 
 
 def batch_tensors(
@@ -94,7 +119,7 @@ def predict_operation(
 def operation_index(operation: str) -> int:
     """Return the operation class index."""
     if operation not in OPERATIONS:
-        raise ValueError(f"unsupported C0 arithmetic operation: {operation}")
+        raise ValueError(f"unsupported C0 typed operation: {operation}")
     return OPERATIONS.index(operation)
 
 
@@ -132,6 +157,7 @@ def load_prototype(path: Path, device: str = "auto") -> ArithmeticProposalNet:
 
 __all__ = [
     "OPERATIONS",
+    "VALUE_KINDS",
     "ArithmeticProposalNet",
     "OperationProposal",
     "batch_tensors",

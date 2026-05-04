@@ -23,6 +23,7 @@ from dataclasses import dataclass
 
 from vpm.compiler import CompiledProgram
 from vpm.substrate.prototype import (
+    OPERATIONS,
     ArithmeticProposalNet,
     OperationProposal,
     load_prototype,
@@ -48,6 +49,7 @@ def encode_update(compiled: CompiledProgram) -> SubstrateState:
 
 
 __all__ = [
+    "OPERATIONS",
     "ArithmeticProposalNet",
     "OperationProposal",
     "SubstrateState",

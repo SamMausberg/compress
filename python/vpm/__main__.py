@@ -18,7 +18,7 @@ from . import __version__
 from .evaluation import evaluate_c0
 from .infer import run_c0_add, run_task
 from .substrate import load_prototype
-from .tasks import arithmetic_task, stages, typed_task
+from .tasks import stages, typed_task
 from .training import TrainingConfig, evaluate_saved_prototype, run_learned_task, train_c0_prototype
 
 DEFAULT_PROTOTYPE_ARTIFACT = Path("artifacts/vpm_c0_prototype.npz")
@@ -120,8 +120,9 @@ def train_c0_command(
 @app.command("infer-c0")
 def infer_c0_command(
     operation: str,
-    left: int,
-    right: int,
+    left: str,
+    right: str,
+    expected: str | None = None,
     artifact: Annotated[
         Path,
         typer.Option(help="NPZ artifact path from train-c0."),
@@ -131,7 +132,7 @@ def infer_c0_command(
 ) -> None:
     """Run one C0 task through a learned proposal and verifier gate."""
     model = load_prototype(artifact, device)
-    payload = run_learned_task(model, arithmetic_task(operation, left, right))
+    payload = run_learned_task(model, typed_task(operation, left, right, expected))
     if as_json:
         typer.echo(json.dumps(payload.to_dict(), indent=2, sort_keys=True))
     else:

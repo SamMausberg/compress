@@ -130,7 +130,7 @@ Python API:
 ```python
 from pathlib import Path
 
-from vpm.tasks import arithmetic_task
+from vpm.tasks import typed_task
 from vpm.training import TrainingConfig, run_learned_task, train_c0_prototype
 
 model, report = train_c0_prototype(
@@ -138,7 +138,7 @@ model, report = train_c0_prototype(
 )
 print(report.heldout.solve_rate, report.heldout.compression_ratio)
 
-inference = run_learned_task(model, arithmetic_task("mul", 6, 7))
+inference = run_learned_task(model, typed_task("concat", "ab", "cd"))
 print(inference.proposal.to_dict())
 print(inference.result.to_dict()["native_report"]["gate"])
 ```

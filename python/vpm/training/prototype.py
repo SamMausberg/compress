@@ -21,7 +21,7 @@ from vpm.substrate.prototype import (
     resolve_device,
     save_prototype,
 )
-from vpm.tasks.c0 import C0Task, arithmetic_task
+from vpm.tasks.c0 import C0Task, arithmetic_task, concat_task, equality_task
 from vpm.verifiers import gate_passed
 
 
@@ -217,7 +217,10 @@ def evaluate_prototype(
     tasks = len(heldout_tasks)
     baselines = (
         fixed_budget_baseline("majority", majority_operation(train_tasks), heldout_tasks),
-        fixed_budget_baseline("add-only", "add", heldout_tasks),
+        *(
+            fixed_budget_baseline(f"{operation}-only", operation, heldout_tasks)
+            for operation in OPERATIONS
+        ),
         enumerative_baseline(heldout_tasks),
     )
     macro_active = len(macro_memory.active)
@@ -248,19 +251,38 @@ def operation_accuracy(
 
 
 def curriculum_split(limit: int) -> tuple[list[C0Task], list[C0Task]]:
-    """Build deterministic train/held-out C0 arithmetic splits."""
-    tasks = [
-        arithmetic_task(operation, left, right)
-        for operation in OPERATIONS
-        for left in range(-limit, limit + 1)
-        for right in range(-limit, limit + 1)
-    ]
+    """Build deterministic train/held-out C0 typed splits."""
+    numbers = list(range(-limit, limit + 1))
+    text_values = [f"t{index}" for index in range(0, (limit * 2) + 1)]
+    tasks = typed_curriculum(numbers, text_values)
     train: list[C0Task] = []
     heldout: list[C0Task] = []
     for task in tasks:
-        split_key = task.left * 31 + task.right * 17 + (13 if task.operation == "mul" else 0)
+        split_key = stable_task_key(task)
         (heldout if split_key % 5 == 0 else train).append(task)
     return train, heldout
+
+
+def typed_curriculum(numbers: list[int], text_values: list[str]) -> list[C0Task]:
+    """Generate the small typed C0 curriculum used by the prototype."""
+    tasks: list[C0Task] = []
+    for left in numbers:
+        for right in numbers:
+            tasks.append(arithmetic_task("add", left, right))
+            tasks.append(arithmetic_task("mul", left, right))
+            tasks.append(equality_task(left, right))
+    for left in text_values:
+        for right in text_values:
+            tasks.append(concat_task(left, right))
+            tasks.append(equality_task(left, right))
+    tasks.extend(equality_task(left, right) for left in (False, True) for right in (False, True))
+    return tasks
+
+
+def stable_task_key(task: C0Task) -> int:
+    """Stable split key independent of Python hash randomization."""
+    raw = f"{task.operation}:{task.left}:{task.right}"
+    return sum((index + 1) * ord(char) for index, char in enumerate(raw))
 
 
 def majority_operation(tasks: list[C0Task]) -> str:
