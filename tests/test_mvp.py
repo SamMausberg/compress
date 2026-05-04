@@ -8,8 +8,9 @@ import sys
 
 from vpm import _native
 from vpm.evaluation import evaluate_c0
-from vpm.infer import run_c0_add, run_task
-from vpm.tasks import multiplication_task, stages
+from vpm.infer import run_c0_add, run_task, run_task_candidate
+from vpm.memory import MemoryLibrary
+from vpm.tasks import arithmetic_task, multiplication_task, stages
 from vpm.training import allocate_budget
 
 
@@ -36,6 +37,16 @@ def test_multiplication_flows_through_native_vertical_slice() -> None:
     assert result.native_report["verification"]["passed"] is True
 
 
+def test_wrong_candidate_is_refused_and_not_admitted_to_memory() -> None:
+    memory = MemoryLibrary()
+    result = run_task_candidate(arithmetic_task("mul", 3, 4), "add", memory)
+    assert result.rendered == "refusal"
+    assert result.native_report["verification"]["passed"] is False
+    assert result.native_report["gate"]["passed"] is False
+    assert result.memory_active == 0
+    assert memory.active == {}
+
+
 def test_evaluation_and_budget_are_connected() -> None:
     metrics = evaluate_c0()
     budget = allocate_budget(metrics)
@@ -58,3 +69,13 @@ def test_cli_runs_vertical_slice() -> None:
         text=True,
     )
     assert completed.stdout.startswith("5 ")
+
+
+def test_cli_runs_generic_c0_task() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "vpm", "run-c0", "mul", "6", "7"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.stdout.startswith("42 ")
