@@ -87,11 +87,8 @@ pub fn canonicalize(program: &Program) -> CanonicalProgram {
 
 fn removes_identity(previous: &mut Vec<Instruction>, instruction: &Instruction) -> bool {
     match (previous.last(), instruction) {
-        (Some(Instruction::Push(vpm_core::Value::Int(0))), Instruction::Add) => {
-            previous.pop();
-            true
-        }
-        (Some(Instruction::Push(vpm_core::Value::Int(1))), Instruction::Mul) => {
+        (Some(Instruction::Push(vpm_core::Value::Int(0))), Instruction::Add)
+        | (Some(Instruction::Push(vpm_core::Value::Int(1))), Instruction::Mul) => {
             previous.pop();
             true
         }

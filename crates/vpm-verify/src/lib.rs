@@ -61,7 +61,7 @@ impl EVal {
     }
 
     /// Numeric e-value.
-    pub fn value(self) -> f64 {
+    pub const fn value(self) -> f64 {
         self.0
     }
 }

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from vpm._reports import float_field, object_map
 from vpm.infer import InferenceResult, run_task
 from vpm.tasks.c0 import C0Task, curriculum
 from vpm.verifiers import gate_passed
@@ -79,10 +80,10 @@ def summarize(results: list[InferenceResult]) -> EvaluationReport:
 
 def certificate(report: dict[str, object]) -> float:
     """Read certificate score from a report."""
-    gate = report.get("gate")
-    if not isinstance(gate, dict):
+    gate = object_map(report.get("gate"))
+    if gate is None:
         return 0.0
-    return float(gate.get("certificate_score", 0.0))
+    return float_field(gate, "certificate_score")
 
 
 __all__ = ["EvaluationReport", "certificate", "evaluate_c0", "summarize"]

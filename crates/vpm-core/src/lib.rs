@@ -42,7 +42,7 @@ impl fmt::Display for HashId {
 }
 
 /// Small typed value universe for the MVP executable kernel.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "value")]
 pub enum Value {
     /// Signed integer value.
@@ -55,7 +55,7 @@ pub enum Value {
 
 impl Value {
     /// Return this value as an integer when its type matches.
-    pub fn as_i64(&self) -> Option<i64> {
+    pub const fn as_i64(&self) -> Option<i64> {
         match self {
             Self::Int(value) => Some(*value),
             Self::Text(_) | Self::Bool(_) => None,
@@ -130,7 +130,7 @@ pub enum Mode {
 }
 
 /// Minimal semantic atom shared by compiler, ledger, verifier, and renderer.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SemanticAtom {
     /// Stable content hash over the atom payload.
     pub id: HashId,
@@ -218,6 +218,7 @@ impl RiskVector {
     }
 
     /// Add two componentwise risk vectors.
+    #[must_use]
     pub fn plus(self, other: Self) -> Self {
         Self {
             impact: self.impact + other.impact,
@@ -371,7 +372,7 @@ pub struct Certifiability {
 
 impl Certifiability {
     /// Low-risk defaults for exact local C0 tasks.
-    pub fn exact_local() -> Self {
+    pub const fn exact_local() -> Self {
         Self {
             verification_cost: 1.0,
             false_pass_upper: 0.01,

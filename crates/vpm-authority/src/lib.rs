@@ -54,7 +54,7 @@ impl AuthLabel {
     }
 
     /// Stable lowercase representation.
-    pub fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Data => "data",
             Self::User => "user",
@@ -85,6 +85,7 @@ impl AuthoritySet {
     }
 
     /// Join two authority sets.
+    #[must_use]
     pub fn join(&self, other: &Self) -> Self {
         let mut labels = self.labels.clone();
         labels.extend(other.labels.iter().cloned());
@@ -108,7 +109,7 @@ impl AuthoritySet {
 }
 
 /// Proof-carrying declassification record.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeclassificationProof {
     /// Source authority label.
     pub from: AuthLabel,
@@ -121,7 +122,7 @@ pub struct DeclassificationProof {
 }
 
 /// Authority/risk gate report.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AuthorityDecision {
     /// Permission labels were covered by the contract.
     pub auth_ok: bool,
@@ -135,7 +136,7 @@ pub struct AuthorityDecision {
 
 impl AuthorityDecision {
     /// Conjunctive gate result.
-    pub fn allowed(&self) -> bool {
+    pub const fn allowed(&self) -> bool {
         self.auth_ok && self.risk_ok && self.declass_ok
     }
 }

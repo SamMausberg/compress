@@ -48,7 +48,7 @@ pub enum OpCode {
 }
 
 /// Single bytecode instruction.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "op", content = "arg", rename_all = "snake_case")]
 pub enum Instruction {
     /// Push a typed literal onto the stack.
@@ -64,7 +64,7 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    fn opcode(&self) -> OpCode {
+    const fn opcode(&self) -> OpCode {
         match self {
             Self::Push(_) => OpCode::Push,
             Self::Add => OpCode::Add,
@@ -76,7 +76,7 @@ impl Instruction {
 }
 
 /// Deterministic bytecode program.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Program {
     /// Program name for ledger scope/reporting.
     pub name: String,

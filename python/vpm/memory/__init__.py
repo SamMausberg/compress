@@ -27,6 +27,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from vpm._reports import float_field, object_list, object_map
+
 
 @dataclass(frozen=True)
 class MemoryCapsule:
@@ -38,19 +40,24 @@ class MemoryCapsule:
     witnesses: tuple[str, ...]
 
 
+def dict_capsules() -> dict[str, MemoryCapsule]:
+    """Typed default factory for capsule dictionaries."""
+    return {}
+
+
 @dataclass
 class MemoryLibrary:
     """Two-tier active/archive memory used by the MVP workflow."""
 
-    active: dict[str, MemoryCapsule] = field(default_factory=dict)
-    archive: dict[str, MemoryCapsule] = field(default_factory=dict)
+    active: dict[str, MemoryCapsule] = field(default_factory=dict_capsules)
+    archive: dict[str, MemoryCapsule] = field(default_factory=dict_capsules)
 
     def admit(self, key: str, value: object, report: dict[str, object]) -> MemoryCapsule | None:
         """Admit only gate-passed reports with equivalence witness accounting."""
-        gate = report.get("gate")
-        if not isinstance(gate, dict) or gate.get("passed") is not True:
+        gate = object_map(report.get("gate"))
+        if gate is None or gate.get("passed") is not True:
             return None
-        score = float(gate.get("certificate_score", 0.0))
+        score = float_field(gate, "certificate_score")
         canonical = report.get("canonical")
         witnesses = witness_names(canonical)
         capsule = MemoryCapsule(key, value, score, witnesses)
@@ -63,17 +70,20 @@ class MemoryLibrary:
 
 def witness_names(canonical: object) -> tuple[str, ...]:
     """Extract canonicalization witness names from a native report."""
-    if not isinstance(canonical, dict):
+    canonical_map = object_map(canonical)
+    if canonical_map is None:
         return ()
-    witnesses = canonical.get("witnesses")
-    if not isinstance(witnesses, list):
+    witnesses = object_list(canonical_map.get("witnesses"))
+    if witnesses is None:
         return ()
     names: list[str] = []
     for witness in witnesses:
-        if isinstance(witness, dict):
-            rule = witness.get("rule")
-            if isinstance(rule, str):
-                names.append(rule)
+        witness_map = object_map(witness)
+        if witness_map is None:
+            continue
+        rule = witness_map.get("rule")
+        if isinstance(rule, str):
+            names.append(rule)
     return tuple(names)
 
 

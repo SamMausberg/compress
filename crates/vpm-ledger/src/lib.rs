@@ -215,7 +215,7 @@ pub struct LedgerSummary {
 }
 
 /// Trace DAG node keyed by payload hash.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TraceNode {
     /// Node id/hash.
     pub id: HashId,
@@ -274,7 +274,7 @@ impl TraceDag {
 }
 
 /// Parent links needed for split and support checks.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProvenanceGraph {
     links: HashMap<HashId, Vec<HashId>>,
 }

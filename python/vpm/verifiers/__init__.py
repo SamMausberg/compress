@@ -30,6 +30,7 @@ import json
 from typing import cast
 
 from vpm import _native
+from vpm._reports import float_field, object_map
 from vpm.compiler import CompiledProgram
 
 
@@ -41,16 +42,16 @@ def native_c0_report(compiled: CompiledProgram) -> dict[str, object]:
 
 def certificate_score(report: dict[str, object]) -> float:
     """Read the gate certificate score from a native report."""
-    gate = report.get("gate")
-    if not isinstance(gate, dict):
+    gate = object_map(report.get("gate"))
+    if gate is None:
         return 0.0
-    return float(gate.get("certificate_score", 0.0))
+    return float_field(gate, "certificate_score")
 
 
 def gate_passed(report: dict[str, object]) -> bool:
     """True when the native conjunctive gate passed."""
-    gate = report.get("gate")
-    return isinstance(gate, dict) and gate.get("passed") is True
+    gate = object_map(report.get("gate"))
+    return gate is not None and gate.get("passed") is True
 
 
 __all__ = ["certificate_score", "gate_passed", "native_c0_report"]

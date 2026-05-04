@@ -9,7 +9,6 @@ import pytest
 from vpm import _native
 from vpm.infer import run_c0_add
 
-
 pytestmark = pytest.mark.sanity
 
 

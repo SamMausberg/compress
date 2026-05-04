@@ -27,6 +27,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
+from vpm._reports import object_map
 from vpm.compiler import CompiledProgram, compile_task
 from vpm.language import NormalForm, render_certified, render_question
 from vpm.memory import MemoryLibrary
@@ -34,6 +35,11 @@ from vpm.retrieval import RetrievalBundle, retrieve
 from vpm.substrate import SubstrateState, encode_update
 from vpm.tasks.c0 import C0Task, addition_task
 from vpm.verifiers import certificate_score, gate_passed, native_c0_report
+
+
+def str_list() -> list[str]:
+    """Typed default factory for errors."""
+    return []
 
 
 @dataclass
@@ -48,7 +54,7 @@ class InferenceResult:
     substrate: SubstrateState | None
     native_report: dict[str, object]
     memory_active: int
-    errors: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=str_list)
 
     def to_dict(self) -> dict[str, object]:
         """JSON-friendly result shape for CLI/API/tests."""
@@ -100,26 +106,29 @@ def run_c0_add(left: int, right: int, expected: int | None = None) -> InferenceR
 
 def native_route(report: dict[str, object]) -> str:
     """Extract the native domain route."""
-    gate = report.get("gate")
-    if isinstance(gate, dict):
-        route = gate.get("route")
-        if isinstance(route, str):
-            return route
+    gate = object_map(report.get("gate"))
+    if gate is None:
+        return "abstain"
+    route = gate.get("route")
+    if isinstance(route, str):
+        return route
     return "abstain"
 
 
 def native_value(report: dict[str, object]) -> object:
     """Extract the native value enum as a Python value."""
     value = report.get("value")
-    if isinstance(value, dict):
-        value_type = value.get("type")
-        payload = value.get("value")
-        if value_type in {"Int", "int"}:
-            return int(payload)
-        if value_type in {"Text", "text"}:
-            return str(payload)
-        if value_type in {"Bool", "bool"}:
-            return bool(payload)
+    value_map = object_map(value)
+    if value_map is None:
+        return value
+    value_type = value_map.get("type")
+    payload = value_map.get("value")
+    if value_type in {"Int", "int"} and isinstance(payload, int):
+        return payload
+    if value_type in {"Text", "text"} and isinstance(payload, str):
+        return payload
+    if value_type in {"Bool", "bool"} and isinstance(payload, bool):
+        return payload
     return value
 
 
