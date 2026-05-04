@@ -7,6 +7,10 @@ from enum import StrEnum
 
 from vpm.evaluation import evaluate_c2, evaluate_c3, evaluate_c4, evaluate_c5
 from vpm.evaluation.compute_accounting import evaluate_compute_accounting, hidden_compute_probe
+from vpm.evaluation.external_components import (
+    dirty_external_component_probe,
+    evaluate_external_components,
+)
 from vpm.retrieval.calibration import dirty_recall_shift_probe, evaluate_recall_shift
 from vpm.substrate import encode_task_graph
 from vpm.tasks.c0 import arithmetic_task
@@ -25,6 +29,7 @@ class FailureMode(StrEnum):
     SOURCE_REBUTTAL_SHIFT_BYPASS = "source_rebuttal_shift_bypass"
     DEPENDENCE_RESIDUALIZATION_BYPASS = "dependence_residualization_bypass"
     HIDDEN_COMPUTE_BYPASS = "hidden_compute_bypass"
+    EXTERNAL_LLM_DEPENDENCE = "external_llm_dependence"
     SAFETY_GATE_BYPASS = "safety_gate_bypass"
     DIALOGUE_GATE_BYPASS = "dialogue_gate_bypass"
     OPAQUE_MACRO_ADMISSION = "opaque_macro_admission"
@@ -35,7 +40,6 @@ UNCOVERED_CRITERION1_CLAUSES = (
     "same-budget external LLM baseline",
     "open-domain context and semantic ambiguity collapse",
     "entailment false-support attacks outside controlled corpus",
-    "external LLM cognitive-component dependence",
 )
 
 
@@ -108,6 +112,8 @@ def evaluate_failure_modes() -> FailureModeReport:
     dirty_recall_shift = dirty_recall_shift_probe()
     dependence_shift = evaluate_dependence_shift()
     dirty_dependence_shift = dirty_dependence_shift_probe()
+    external_components = evaluate_external_components()
+    dirty_external_components = dirty_external_component_probe()
     compute = evaluate_compute_accounting()
     hidden_compute = hidden_compute_probe()
     return FailureModeReport(
@@ -160,6 +166,16 @@ def evaluate_failure_modes() -> FailureModeReport:
                     f"epsilon_dep={dependence_shift.epsilon_dep:.3f} "
                     f"shifted_epsilon={dependence_shift.shifted_epsilon:.3f} "
                     f"dirty_passed={dirty_dependence_shift.passed}"
+                ),
+            ),
+            FailureCheck(
+                FailureMode.EXTERNAL_LLM_DEPENDENCE,
+                not external_components.passed or dirty_external_components.passed,
+                (
+                    f"violations={len(external_components.violations)} "
+                    f"external_inference="
+                    f"{len(external_components.external_inference_dependencies)} "
+                    f"dirty_passed={dirty_external_components.passed}"
                 ),
             ),
             FailureCheck(

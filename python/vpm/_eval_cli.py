@@ -19,6 +19,7 @@ from vpm.evaluation import (
 from vpm.evaluation.ablations import evaluate_ablations
 from vpm.evaluation.baselines import evaluate_baseline_suite
 from vpm.evaluation.compute_accounting import evaluate_compute_accounting
+from vpm.evaluation.external_components import evaluate_external_components
 from vpm.evaluation.failure_modes import evaluate_failure_modes
 from vpm.evaluation.hard_domains import evaluate_hard_domains
 from vpm.evaluation.phase_transition import evaluate_phase_transition
@@ -182,6 +183,21 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
                 f"passed={report.passed} "
                 f"epsilon_dep={report.epsilon_dep:.3f} "
                 f"shifted_epsilon={report.shifted_epsilon:.3f}"
+            )
+
+    @app.command("eval-external-components")
+    def eval_external_components_command(
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Run external cognitive-component authority checks."""
+        report = evaluate_external_components()
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"passed={report.passed} "
+                f"violations={len(report.violations)} "
+                f"external_inference={len(report.external_inference_dependencies)}"
             )
 
     @app.command("eval-red-team")
