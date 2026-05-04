@@ -40,6 +40,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm.evaluation import EvaluationReport
+from vpm.training.losses import LOSS_NAMES, LossReport, loss_report
 from vpm.training.prototype import (
     BaselineMetrics,
     CompressionMetrics,
@@ -97,9 +98,11 @@ def allocate_budget(report: EvaluationReport, total: float = 1.0) -> BudgetAlloc
 
 
 __all__ = [
+    "LOSS_NAMES",
     "BaselineMetrics",
     "BudgetAllocation",
     "CompressionMetrics",
+    "LossReport",
     "PrototypeEvalReport",
     "PrototypeInference",
     "PrototypeTrace",
@@ -113,6 +116,7 @@ __all__ = [
     "curriculum_split",
     "evaluate_saved_c1_prototype",
     "evaluate_saved_prototype",
+    "loss_report",
     "matched_baselines",
     "run_learned_task",
     "split_report",
