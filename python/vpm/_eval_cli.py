@@ -18,6 +18,7 @@ from vpm.evaluation import (
 )
 from vpm.evaluation.ablations import evaluate_ablations
 from vpm.evaluation.baselines import evaluate_baseline_suite
+from vpm.evaluation.compute_accounting import evaluate_compute_accounting
 from vpm.evaluation.failure_modes import evaluate_failure_modes
 from vpm.evaluation.hard_domains import evaluate_hard_domains
 from vpm.evaluation.phase_transition import evaluate_phase_transition
@@ -29,6 +30,7 @@ def register_eval_commands(app: typer.Typer) -> None:
     """Register evaluation commands on the top-level Typer app."""
     register_curriculum_eval_commands(app)
     register_meta_eval_commands(app)
+    register_audit_eval_commands(app)
 
 
 def register_curriculum_eval_commands(app: typer.Typer) -> None:
@@ -149,6 +151,26 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
             regressions = sum(result.expected_regression for result in report.results)
             typer.echo(f"passed={report.passed} regressions={regressions}")
 
+    @app.command("eval-red-team")
+    def eval_red_team_command(
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Run M6 failure-mode and ablation replay."""
+        report = red_team_replay()
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"passed={report.passed} "
+                f"failures={len(report.failures.failures)} "
+                f"ablations={len(report.ablations.results)} "
+                f"hard_domains={report.hard_domains.tasks}"
+            )
+
+
+def register_audit_eval_commands(app: typer.Typer) -> None:
+    """Register baseline, phase, hard-domain, and compute audit commands."""
+
     @app.command("eval-baselines")
     def eval_baselines_command(
         limit: int = typer.Option(2, help="Absolute integer limit used for C1 splits."),
@@ -199,20 +221,19 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
                 f"tasks={report.tasks}"
             )
 
-    @app.command("eval-red-team")
-    def eval_red_team_command(
+    @app.command("eval-compute")
+    def eval_compute_command(
         as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
     ) -> None:
-        """Run M6 failure-mode and ablation replay."""
-        report = red_team_replay()
+        """Run matched compute-accounting checks."""
+        report = evaluate_compute_accounting()
         if as_json:
             typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
         else:
             typer.echo(
                 f"passed={report.passed} "
-                f"failures={len(report.failures.failures)} "
-                f"ablations={len(report.ablations.results)} "
-                f"hard_domains={report.hard_domains.tasks}"
+                f"total_units={report.total_units:.3f} "
+                f"budget={report.budget:.3f}"
             )
 
 

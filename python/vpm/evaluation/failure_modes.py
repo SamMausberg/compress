@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from vpm.evaluation import evaluate_c2, evaluate_c3, evaluate_c4, evaluate_c5
+from vpm.evaluation.compute_accounting import evaluate_compute_accounting, hidden_compute_probe
 from vpm.substrate import encode_task_graph
 from vpm.tasks.c0 import arithmetic_task
 from vpm.training.probes import edge_deletion_probe
@@ -19,6 +20,7 @@ class FailureMode(StrEnum):
     STAGE_SCHEDULER_BYPASS = "stage_scheduler_bypass"
     SUBSTRATE_CRITICAL_EDGE_BYPASS = "substrate_critical_edge_bypass"
     SPLIT_LEAKAGE_BYPASS = "split_leakage_bypass"
+    HIDDEN_COMPUTE_BYPASS = "hidden_compute_bypass"
     SAFETY_GATE_BYPASS = "safety_gate_bypass"
     DIALOGUE_GATE_BYPASS = "dialogue_gate_bypass"
     OPAQUE_MACRO_ADMISSION = "opaque_macro_admission"
@@ -31,7 +33,6 @@ UNCOVERED_CRITERION1_CLAUSES = (
     "source/rebuttal recall miss calibration under shift",
     "entailment false-support attacks outside controlled corpus",
     "dependence residualization calibration under shift",
-    "hidden test-time compute accounting",
     "external LLM cognitive-component dependence",
 )
 
@@ -101,6 +102,8 @@ def evaluate_failure_modes() -> FailureModeReport:
         encode_task_graph(arithmetic_task("add", 2, 5)),
         ("left", "expected"),
     )
+    compute = evaluate_compute_accounting()
+    hidden_compute = hidden_compute_probe()
     return FailureModeReport(
         checks=(
             FailureCheck(
@@ -128,6 +131,11 @@ def evaluate_failure_modes() -> FailureModeReport:
                     f"epsilon_crit={substrate_probe.report.epsilon_crit:.3f} "
                     f"failed={substrate_probe.failed}"
                 ),
+            ),
+            FailureCheck(
+                FailureMode.HIDDEN_COMPUTE_BYPASS,
+                not compute.passed or hidden_compute.passed,
+                (f"compute_passed={compute.passed} hidden_units={hidden_compute.hidden_units:.3f}"),
             ),
             FailureCheck(
                 FailureMode.SAFETY_GATE_BYPASS,
