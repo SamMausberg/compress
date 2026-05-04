@@ -33,7 +33,7 @@ classifiers = [
 dependencies = [
   # TODO(security): CVE-2026-24747 — torch unpickler RCE. Once a patched
   # 2.11.z is published, raise this floor to that version (e.g. >=2.11.2).
-  "torch>=2.11",
+  "torch>=2.11,<2.12",
   "numpy>=2.4",
   "scipy>=1.17",
   "einops>=0.8",
@@ -77,6 +77,14 @@ strip = true
 # ---------------------------------------------------------------------------
 [tool.uv]
 package = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu130", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
 
 [dependency-groups]
 dev = [
