@@ -30,26 +30,34 @@ __version__ = "0.0.0"
 from vpm.infer import InferenceResult, run_c0_add, run_task
 from vpm.tasks import (
     C0Task,
+    C0Value,
     addition_task,
     arithmetic_task,
+    concat_task,
     curriculum,
+    equality_task,
     multiplication_task,
     stages,
+    typed_task,
 )
 from vpm.training import TrainingConfig, TrainingReport, train_c0_prototype
 
 __all__ = [
     "C0Task",
+    "C0Value",
     "InferenceResult",
     "TrainingConfig",
     "TrainingReport",
     "__version__",
     "addition_task",
     "arithmetic_task",
+    "concat_task",
     "curriculum",
+    "equality_task",
     "multiplication_task",
     "run_c0_add",
     "run_task",
     "stages",
     "train_c0_prototype",
+    "typed_task",
 ]

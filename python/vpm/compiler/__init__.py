@@ -23,7 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm.language import NormalForm, normalize
-from vpm.tasks.c0 import C0Task
+from vpm.tasks.c0 import C0Task, C0Value
 
 
 @dataclass(frozen=True)
@@ -32,14 +32,14 @@ class CompiledProgram:
 
     task_id: str
     operation: str
-    left: int
-    right: int
-    expected: int
+    left: C0Value
+    right: C0Value
+    expected: C0Value
     normal_form: NormalForm
     support_loss: float = 0.0
 
     @property
-    def args(self) -> tuple[int, int]:
+    def args(self) -> tuple[C0Value, C0Value]:
         """Typed program arguments."""
         return (self.left, self.right)
 

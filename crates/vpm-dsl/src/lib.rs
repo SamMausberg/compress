@@ -234,6 +234,30 @@ pub fn c0_mul_program(left: i64, right: i64) -> Program {
     c0_binary_program("mul", left, right, Instruction::Mul)
 }
 
+/// Convenient C0 text concatenation program.
+pub fn c0_concat_program(left: impl Into<String>, right: impl Into<String>) -> Program {
+    Program::new(
+        "concat",
+        vec![
+            Instruction::Push(Value::Text(left.into())),
+            Instruction::Push(Value::Text(right.into())),
+            Instruction::Concat,
+        ],
+    )
+}
+
+/// Convenient C0 equality program over typed values.
+pub fn c0_eq_program(left: Value, right: Value) -> Program {
+    Program::new(
+        "eq",
+        vec![
+            Instruction::Push(left),
+            Instruction::Push(right),
+            Instruction::Eq,
+        ],
+    )
+}
+
 fn c0_binary_program(operation: &str, left: i64, right: i64, instruction: Instruction) -> Program {
     Program::new(
         format!("{operation}-{left}-{right}"),
@@ -247,7 +271,7 @@ fn c0_binary_program(operation: &str, left: i64, right: i64, instruction: Instru
 
 #[cfg(test)]
 mod tests {
-    use super::{c0_add_program, c0_mul_program, execute};
+    use super::{c0_add_program, c0_concat_program, c0_eq_program, c0_mul_program, execute};
     use vpm_core::Value;
 
     #[test]
@@ -262,6 +286,23 @@ mod tests {
     fn executes_mul_program_with_ledger() {
         let report = execute(&c0_mul_program(6, 7)).expect("program executes");
         assert_eq!(report.value, Value::Int(42));
+        assert_eq!(report.ledger.entries().len(), 4);
+        assert_eq!(report.trace.edges.len(), 2);
+    }
+
+    #[test]
+    fn executes_concat_program_with_ledger() {
+        let report = execute(&c0_concat_program("ab", "cd")).expect("program executes");
+        assert_eq!(report.value, Value::Text("abcd".to_owned()));
+        assert_eq!(report.ledger.entries().len(), 4);
+        assert_eq!(report.trace.edges.len(), 2);
+    }
+
+    #[test]
+    fn executes_eq_program_with_ledger() {
+        let report =
+            execute(&c0_eq_program(Value::Int(5), Value::Int(6))).expect("program executes");
+        assert_eq!(report.value, Value::Bool(false));
         assert_eq!(report.ledger.entries().len(), 4);
         assert_eq!(report.trace.edges.len(), 2);
     }

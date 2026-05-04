@@ -18,7 +18,7 @@ from . import __version__
 from .evaluation import evaluate_c0
 from .infer import run_c0_add, run_task
 from .substrate import load_prototype
-from .tasks import arithmetic_task, stages
+from .tasks import arithmetic_task, stages, typed_task
 from .training import TrainingConfig, evaluate_saved_prototype, run_learned_task, train_c0_prototype
 
 DEFAULT_PROTOTYPE_ARTIFACT = Path("artifacts/vpm_c0_prototype.npz")
@@ -54,13 +54,13 @@ def run_c0_add_command(
 @app.command("run-c0")
 def run_c0_command(
     operation: str,
-    left: int,
-    right: int,
-    expected: int | None = None,
+    left: str,
+    right: str,
+    expected: str | None = None,
     as_json: bool = typer.Option(False, "--json", help="Print the full JSON report."),
 ) -> None:
-    """Run a supported C0 arithmetic task through the verifier gate."""
-    result = run_task(arithmetic_task(operation, left, right, expected))
+    """Run a supported C0 typed task through the verifier gate."""
+    result = run_task(typed_task(operation, left, right, expected))
     if as_json:
         typer.echo(json.dumps(result.to_dict(), indent=2, sort_keys=True))
     else:

@@ -36,13 +36,26 @@ from vpm.compiler import CompiledProgram
 
 def native_c0_report(compiled: CompiledProgram) -> dict[str, object]:
     """Run the native exact verifier/gate path for a compiled C0 task."""
-    raw = _native.run_c0_arith_json(
+    raw = _native.run_c0_typed_json(
         compiled.operation,
-        compiled.left,
-        compiled.right,
-        compiled.expected,
+        native_value_json(compiled.left),
+        native_value_json(compiled.right),
+        native_value_json(compiled.expected),
     )
     return cast(dict[str, object], json.loads(raw))
+
+
+def native_value_json(value: object) -> str:
+    """Serialize a Python value into the Rust ``Value`` JSON shape."""
+    if isinstance(value, bool):
+        payload: dict[str, object] = {"type": "Bool", "value": value}
+    elif isinstance(value, int):
+        payload = {"type": "Int", "value": value}
+    elif isinstance(value, str):
+        payload = {"type": "Text", "value": value}
+    else:
+        raise TypeError(f"unsupported native value: {value!r}")
+    return json.dumps(payload, separators=(",", ":"))
 
 
 def certificate_score(report: dict[str, object]) -> float:
@@ -59,4 +72,4 @@ def gate_passed(report: dict[str, object]) -> bool:
     return gate is not None and gate.get("passed") is True
 
 
-__all__ = ["certificate_score", "gate_passed", "native_c0_report"]
+__all__ = ["certificate_score", "gate_passed", "native_c0_report", "native_value_json"]

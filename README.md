@@ -99,6 +99,8 @@ uv run maturin develop
 uv run vpm run-c0-add 2 3
 uv run vpm run-c0-add 2 3 --json
 uv run vpm run-c0 mul 6 7 --json
+uv run vpm run-c0 concat ab cd --json
+uv run vpm run-c0 eq 5 5 --json
 uv run vpm eval-c0 --json
 uv run vpm train-c0 --epochs 80 --json
 uv run vpm eval-prototype --json

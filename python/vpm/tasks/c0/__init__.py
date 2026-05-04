@@ -16,15 +16,17 @@ from dataclasses import dataclass
 
 from vpm.tasks.spec import StageSpec
 
+C0Value = int | str | bool
+
 
 @dataclass(frozen=True)
 class C0Task:
-    """Cheap-verifier arithmetic task for the MVP vertical slice."""
+    """Cheap-verifier typed task for the MVP vertical slice."""
 
     task_id: str
-    left: int
-    right: int
-    expected: int
+    left: C0Value
+    right: C0Value
+    expected: C0Value
     operation: str = "add"
 
     @property
@@ -51,6 +53,33 @@ def multiplication_task(left: int, right: int, expected: int | None = None) -> C
     )
 
 
+def concat_task(left: str, right: str, expected: str | None = None) -> C0Task:
+    """Build a deterministic string-concatenation task."""
+    ensure_token(left)
+    ensure_token(right)
+    answer = left + right if expected is None else expected
+    ensure_token(answer)
+    return C0Task(
+        task_id=f"c0-concat-{left}-{right}",
+        left=left,
+        right=right,
+        expected=answer,
+        operation="concat",
+    )
+
+
+def equality_task(left: C0Value, right: C0Value, expected: bool | None = None) -> C0Task:
+    """Build a deterministic typed-equality task."""
+    answer = left == right if expected is None else expected
+    return C0Task(
+        task_id=f"c0-eq-{value_token(left)}-{value_token(right)}",
+        left=left,
+        right=right,
+        expected=answer,
+        operation="eq",
+    )
+
+
 def arithmetic_task(operation: str, left: int, right: int, expected: int | None = None) -> C0Task:
     """Build a supported C0 arithmetic task."""
     if operation == "add":
@@ -60,13 +89,72 @@ def arithmetic_task(operation: str, left: int, right: int, expected: int | None 
     raise ValueError(f"unsupported C0 arithmetic operation: {operation}")
 
 
+def typed_task(
+    operation: str,
+    left: str,
+    right: str,
+    expected: str | None = None,
+) -> C0Task:
+    """Build a C0 task from CLI-friendly typed tokens."""
+    if operation in {"add", "mul"}:
+        parsed_expected = None if expected is None else int(expected)
+        return arithmetic_task(operation, int(left), int(right), parsed_expected)
+    if operation == "concat":
+        return concat_task(left, right, expected)
+    if operation == "eq":
+        parsed_left = parse_token(left)
+        parsed_right = parse_token(right)
+        parsed_expected = None if expected is None else parse_bool(expected)
+        return equality_task(parsed_left, parsed_right, parsed_expected)
+    raise ValueError(f"unsupported C0 typed operation: {operation}")
+
+
 def curriculum() -> list[C0Task]:
     """Small local C0 curriculum used by examples and tests."""
     return [
         addition_task(2, 3),
         addition_task(8, 13),
         addition_task(-4, 9),
+        multiplication_task(6, 7),
+        concat_task("ab", "cd"),
+        equality_task(5, 5),
+        equality_task("left", "right"),
     ]
+
+
+def parse_token(raw: str) -> C0Value:
+    """Parse a compact typed token."""
+    if raw == "true":
+        return True
+    if raw == "false":
+        return False
+    try:
+        return int(raw)
+    except ValueError:
+        ensure_token(raw)
+        return raw
+
+
+def parse_bool(raw: str) -> bool:
+    """Parse a lowercase boolean token."""
+    if raw == "true":
+        return True
+    if raw == "false":
+        return False
+    raise ValueError("expected must be true or false for eq")
+
+
+def value_token(value: C0Value) -> str:
+    """Render a compact typed token."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def ensure_token(value: str) -> None:
+    """Reject whitespace-bearing strings until the C0 parser supports quoting."""
+    if not value or any(char.isspace() for char in value):
+        raise ValueError("C0 string operands must be non-empty tokens without whitespace")
 
 
 def stage_spec() -> StageSpec:
@@ -81,9 +169,13 @@ def stage_spec() -> StageSpec:
 
 __all__ = [
     "C0Task",
+    "C0Value",
     "addition_task",
     "arithmetic_task",
+    "concat_task",
     "curriculum",
+    "equality_task",
     "multiplication_task",
     "stage_spec",
+    "typed_task",
 ]
