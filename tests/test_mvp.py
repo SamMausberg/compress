@@ -170,6 +170,18 @@ def test_cli_runs_vertical_slice() -> None:
     assert completed.stdout.startswith("5 ")
 
 
+def test_cli_doctor_reports_runtime() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "vpm", "doctor", "--json"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(completed.stdout)
+    assert payload["native_extension_ok"] is True
+    assert payload["torch"].startswith("2.")
+
+
 def test_cli_runs_generic_c0_task() -> None:
     completed = subprocess.run(
         [sys.executable, "-m", "vpm", "run-c0", "mul", "6", "7"],

@@ -92,10 +92,13 @@ The repo includes a runnable VPM-0 kernel for cheap-verifier C0 tasks. It
 connects the Rust core model, ledger, DSL executor, canonicalization witness,
 authority/risk gate, verifier kernel, Python compiler/retrieval/substrate
 proposal/memory/inference/evaluation modules, CLI, example, and tests.
+`vpm doctor --json` checks the local Rust extension and PyTorch/CUDA runtime,
+including a tiny CUDA probe when a GPU is visible.
 
 ```bash
 cargo test --workspace
 uv run maturin develop
+uv run vpm doctor --json
 uv run vpm run-c0-add 2 3
 uv run vpm run-c0-add 2 3 --json
 uv run vpm run-c0 mul 6 7 --json

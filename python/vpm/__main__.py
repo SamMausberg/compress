@@ -15,6 +15,7 @@ from typing import Annotated
 import typer
 
 from . import __version__
+from .diagnostics import collect_diagnostics
 from .evaluation import evaluate_c0, evaluate_c1
 from .infer import run_c0_add, run_task
 from .substrate import load_prototype
@@ -42,6 +43,30 @@ app = typer.Typer(
 def version() -> None:
     """Print the package version."""
     typer.echo(__version__)
+
+
+@app.command("doctor")
+def doctor_command(
+    as_json: bool = typer.Option(False, "--json", help="Print diagnostics as JSON."),
+) -> None:
+    """Check the local native extension and PyTorch/CUDA runtime."""
+    report = collect_diagnostics()
+    if as_json:
+        typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    else:
+        typer.echo(
+            " ".join(
+                [
+                    f"python={report.python}",
+                    f"torch={report.torch}",
+                    f"torch_cuda={report.torch_cuda}",
+                    f"cuda={report.cuda_available}",
+                    f"device={report.cuda_device}",
+                    f"cuda_probe={report.cuda_probe_ok}",
+                    f"native={report.native_extension_ok}",
+                ]
+            )
+        )
 
 
 @app.command("run-c0-add")

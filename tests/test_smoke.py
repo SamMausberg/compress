@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import vpm
 from vpm._native import authority, contract, dsl, egraph, ledger, verify
+from vpm.diagnostics import collect_diagnostics
 from vpm.infer import run_c0_add
 
 
@@ -18,6 +19,16 @@ def test_native_boundary() -> None:
     # Six submodules registered by `crates/vpm-py/src/lib.rs`.
     for mod in (contract, ledger, dsl, egraph, authority, verify):
         assert mod.__doc__ is not None
+
+
+def test_diagnostics_report_install_runtime() -> None:
+    report = collect_diagnostics()
+    assert report.torch
+    assert report.torch_cuda is not None
+    assert report.native_extension_ok is True
+    if report.cuda_available:
+        assert report.cuda_device
+        assert report.cuda_probe_ok is True
 
 
 def test_public_vertical_slice() -> None:
