@@ -20,6 +20,7 @@ from vpm.substrate.prototype import (
     save_prototype,
 )
 from vpm.tasks.c0 import C0Task, arithmetic_task, concat_task, equality_task
+from vpm.tasks.c1 import as_c0_tasks, schema_split
 from vpm.training.prototype_metrics import (
     BaselineMetrics,
     CompressionMetrics,
@@ -154,12 +155,36 @@ def train_c0_prototype(
 ) -> tuple[ArithmeticProposalNet, TrainingReport]:
     """Train a recurrent substrate proposal model on C0 curriculum tasks."""
     cfg = config or TrainingConfig()
+    train_tasks, heldout_tasks = curriculum_split(cfg.limit)
+    return train_prototype_split(cfg, train_tasks, heldout_tasks, scale=cfg.limit)
+
+
+def train_c1_prototype(
+    config: TrainingConfig | None = None,
+) -> tuple[ArithmeticProposalNet, TrainingReport]:
+    """Train the proposal model on executable C1 hidden-schema tasks."""
+    cfg = config or TrainingConfig()
+    train_tasks, heldout_tasks = schema_split(cfg.limit)
+    return train_prototype_split(
+        cfg,
+        as_c0_tasks(train_tasks),
+        as_c0_tasks(heldout_tasks),
+        scale=cfg.limit,
+    )
+
+
+def train_prototype_split(
+    cfg: TrainingConfig,
+    train_tasks: list[C0Task],
+    heldout_tasks: list[C0Task],
+    scale: float,
+) -> tuple[ArithmeticProposalNet, TrainingReport]:
+    """Train a recurrent substrate proposal model on a prepared split."""
     torch.manual_seed(cfg.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(cfg.seed)
     device = resolve_device(cfg.device)
-    train_tasks, heldout_tasks = curriculum_split(cfg.limit)
-    model = ArithmeticProposalNet(cfg.hidden_dim, scale=cfg.limit).to(device)
+    model = ArithmeticProposalNet(cfg.hidden_dim, scale=scale).to(device)
     events, labels = batch_tensors(train_tasks, model.scale, device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.learning_rate)
     loss_fn = nn.CrossEntropyLoss()
@@ -199,6 +224,20 @@ def evaluate_saved_prototype(
     model = load_prototype(path, device)
     train_tasks, heldout_tasks = curriculum_split(limit)
     return evaluate_prototype(model, train_tasks, heldout_tasks, resolve_device(device))
+
+
+def evaluate_saved_c1_prototype(
+    path: Path, limit: int = 8, device: str = "auto"
+) -> PrototypeEvalReport:
+    """Load and evaluate a saved prototype artifact on C1 hidden-schema tasks."""
+    model = load_prototype(path, device)
+    train_tasks, heldout_tasks = schema_split(limit)
+    return evaluate_prototype(
+        model,
+        as_c0_tasks(train_tasks),
+        as_c0_tasks(heldout_tasks),
+        resolve_device(device),
+    )
 
 
 def run_learned_task(model: ArithmeticProposalNet, task: C0Task) -> PrototypeInference:
@@ -331,7 +370,9 @@ __all__ = [
     "TrainingReport",
     "curriculum_split",
     "evaluate_prototype",
+    "evaluate_saved_c1_prototype",
     "evaluate_saved_prototype",
     "run_learned_task",
     "train_c0_prototype",
+    "train_c1_prototype",
 ]

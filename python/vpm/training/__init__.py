@@ -49,9 +49,11 @@ from vpm.training.prototype import (
     TrainingConfig,
     TrainingReport,
     curriculum_split,
+    evaluate_saved_c1_prototype,
     evaluate_saved_prototype,
     run_learned_task,
     train_c0_prototype,
+    train_c1_prototype,
 )
 from vpm.training.prototype_metrics import matched_baselines
 
@@ -98,8 +100,10 @@ __all__ = [
     "TrainingReport",
     "allocate_budget",
     "curriculum_split",
+    "evaluate_saved_c1_prototype",
     "evaluate_saved_prototype",
     "matched_baselines",
     "run_learned_task",
     "train_c0_prototype",
+    "train_c1_prototype",
 ]

@@ -107,6 +107,8 @@ uv run vpm eval-c0 --json
 uv run vpm eval-c1 --json
 uv run vpm train-c0 --epochs 80 --json
 uv run vpm eval-prototype --json
+uv run vpm train-c1 --epochs 80 --json
+uv run vpm eval-c1-prototype --json
 uv run vpm infer-c0 mul 6 7 --json
 uv run vpm infer-c0-auto ab cd abcd --json
 uv run vpm stages
@@ -141,6 +143,9 @@ admission when the authority or risk gate fails.
 The C1 executable subset adds hidden-schema tasks whose observations carry
 only typed operands plus expected values; evaluation bridges them back through
 the same native C0 executor/verifier/gate.
+`train-c1` trains the same non-transformer substrate on those hidden-schema
+splits and `eval-c1-prototype --json` reports the matched baselines,
+compression/frontier metrics, and verifier-gated traces.
 `eval-c0 --json` and `eval-c1 --json` summarize source coverage, rebuttal
 clearance, and realization-loss rates in their `evidence` blocks.
 
@@ -150,7 +155,12 @@ Python API:
 from pathlib import Path
 
 from vpm.tasks import typed_hidden_task
-from vpm.training import TrainingConfig, run_learned_task, train_c0_prototype
+from vpm.training import (
+    TrainingConfig,
+    run_learned_task,
+    train_c0_prototype,
+    train_c1_prototype,
+)
 
 model, report = train_c0_prototype(
     TrainingConfig(epochs=80, artifact=Path("artifacts/vpm_c0_prototype.npz"))
@@ -163,6 +173,11 @@ print(
 inference = run_learned_task(model, typed_hidden_task("ab", "cd", "abcd"))
 print(inference.proposal.to_dict())
 print(inference.result.to_dict()["native_report"]["gate"])
+
+_, c1_report = train_c1_prototype(
+    TrainingConfig(epochs=80, artifact=Path("artifacts/vpm_c1_prototype.npz"))
+)
+print(c1_report.heldout.solve_rate)
 ```
 
 ## Note
