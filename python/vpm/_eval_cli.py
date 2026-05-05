@@ -26,6 +26,7 @@ from vpm.evaluation.compute_accounting import evaluate_compute_accounting
 from vpm.evaluation.external_components import evaluate_external_components
 from vpm.evaluation.failure_modes import evaluate_failure_modes
 from vpm.evaluation.hard_domains import evaluate_hard_domains
+from vpm.evaluation.objective_audit import evaluate_objective_completion
 from vpm.evaluation.open_domain import evaluate_open_domain_ambiguity
 from vpm.evaluation.phase_transition import evaluate_phase_transition
 from vpm.evaluation.red_team import red_team_replay
@@ -358,6 +359,22 @@ def register_audit_eval_commands(app: typer.Typer) -> None:
             typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
         else:
             typer.echo(f"passed={report.passed} blockers={len(report.blockers)}")
+
+    @app.command("eval-objective")
+    def eval_objective_command(
+        limit: int = typer.Option(0, help="Absolute integer limit used for C1 baseline audit."),
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Run the prompt-to-artifact completion audit for the active objective."""
+        report = evaluate_objective_completion(limit=limit)
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"passed={report.passed} "
+                f"items={len(report.checklist)} "
+                f"blockers={len(report.blockers)}"
+            )
 
 
 __all__ = ["register_eval_commands"]

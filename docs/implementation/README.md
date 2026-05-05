@@ -216,6 +216,11 @@ certified utility positive; all Criterion 1 failure clauses unfired.
 - `vpm eval-release --json` runs the objective-facing release audit. It is
   expected to stay `passed=false` until the same-budget external LLM
   baselines are actually configured and executed.
+- `vpm eval-objective --json` wraps `eval-release` with a prompt-to-artifact
+  checklist for the active completion objective. Use it before claiming
+  completion so remaining release blockers are tied back to the concrete
+  architecture, training, baseline, hard-domain, and CI requirements they
+  affect.
 
 ## Known risks
 
