@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+from vpm._eval_cli import format_blockers
 from vpm.evaluation.llm_baseline_c1 import score_llm_baseline_predictions
 from vpm.evaluation.llm_baseline_hard import score_hard_llm_baseline_predictions
 from vpm.evaluation.release_audit import evaluate_release_readiness
@@ -13,6 +14,13 @@ from vpm.tasks.c1 import schema_split
 from vpm.tasks.hard_domains import hard_domain_curriculum
 
 pytestmark = pytest.mark.sanity
+
+
+def test_audit_cli_blocker_summary_names_plain_output_blockers() -> None:
+    assert format_blockers(()) == "none"
+    assert format_blockers(("first blocker", "second blocker")) == (
+        "first blocker | second blocker"
+    )
 
 
 def test_release_readiness_reports_external_llm_baseline_blocker(

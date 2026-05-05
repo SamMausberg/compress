@@ -358,7 +358,11 @@ def register_audit_eval_commands(app: typer.Typer) -> None:
         if as_json:
             typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
         else:
-            typer.echo(f"passed={report.passed} blockers={len(report.blockers)}")
+            typer.echo(
+                f"passed={report.passed} "
+                f"blockers={len(report.blockers)} "
+                f"blocker_details={format_blockers(report.blockers)}"
+            )
 
     @app.command("eval-objective")
     def eval_objective_command(
@@ -373,8 +377,14 @@ def register_audit_eval_commands(app: typer.Typer) -> None:
             typer.echo(
                 f"passed={report.passed} "
                 f"items={len(report.checklist)} "
-                f"blockers={len(report.blockers)}"
+                f"blockers={len(report.blockers)} "
+                f"blocker_details={format_blockers(report.blockers)}"
             )
 
 
-__all__ = ["register_eval_commands"]
+def format_blockers(blockers: tuple[str, ...]) -> str:
+    """Compact blocker labels for non-JSON audit CLI output."""
+    return "none" if not blockers else " | ".join(blockers)
+
+
+__all__ = ["format_blockers", "register_eval_commands"]
