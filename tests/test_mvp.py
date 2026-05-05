@@ -208,13 +208,8 @@ def test_c5_macro_replay_admits_only_safe_compressive_macros() -> None:
 
 def test_all_curriculum_modules_have_runtime_metadata() -> None:
     specs = stages()
-    assert [spec.name for spec in specs] == ["C0", "C1", "C2", "C3", "C4", "C5"]
-    assert specs[0].executable is True
-    assert specs[1].executable is True
-    assert specs[2].executable is True
-    assert specs[3].executable is True
-    assert specs[4].executable is True
-    assert specs[5].executable is True
+    assert [spec.name for spec in specs] == ["C0", "C1", "C2", "C3", "C4", "C5", "M6"]
+    assert all(spec.executable for spec in specs)
     assert all(spec.implemented_components for spec in specs)
 
 

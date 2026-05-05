@@ -124,6 +124,9 @@ produce the expected regressions.
 
 - All of $C_0$–$C_5$ exercised end-to-end with red-team replay
   (§8 paragraph on $\mathcal{D}_{red}$; Appendix B).
+- Runtime metadata includes an explicit `M6` stage for red-team replay,
+  ablations, hard-domain probes, and external-LLM task export. The release
+  audit treats any `StageSpec.blockers` as release blockers.
 
 Exit gate: zero critical gate violations in adversarial suites; held-out
 certified utility positive; all Criterion 1 failure clauses unfired.

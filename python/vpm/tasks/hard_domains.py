@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from vpm.tasks.spec import StageSpec
+
 
 class HardDomain(StrEnum):
     """Hard-domain suite categories."""
@@ -76,4 +78,19 @@ def hard_domain_curriculum() -> tuple[HardDomainTask, ...]:
     )
 
 
-__all__ = ["HardDomain", "HardDomainTask", "hard_domain_curriculum"]
+def stage_spec() -> StageSpec:
+    """Runtime metadata for the M6 adversarial/release probe suite."""
+    return StageSpec(
+        name="M6",
+        summary="red-team replay, ablations, and held-out hard-domain probes",
+        executable=True,
+        implemented_components=(
+            "criterion1-failure-suite",
+            "control-ablation-replay",
+            "hard-domain-probes",
+            "external-llm-task-export",
+        ),
+    )
+
+
+__all__ = ["HardDomain", "HardDomainTask", "hard_domain_curriculum", "stage_spec"]

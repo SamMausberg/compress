@@ -189,6 +189,9 @@ not yet covered by the shipped C0-C5 subset.
 `eval-ablations --json` turns off key controls and verifies that the expected
 regressions appear; `eval-red-team --json` combines those ablations with the
 failure-mode suite for the M6 replay harness.
+`vpm stages` includes the executable C0-C5 subsets plus the M6 red-team
+manifest, and `eval-release --json` treats any remaining stage blockers as
+release blockers rather than evidence of completion.
 `eval-baselines --json` audits matched-baseline availability: executable VPM,
 program-synthesis, local transformer, and local SSM baselines run on the
 same C1 split. LLM baselines remain external and are reported as

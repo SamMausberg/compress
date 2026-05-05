@@ -1,4 +1,4 @@
-"""Curriculum tasks ``C_0`` … ``C_5``.
+"""Curriculum tasks ``C_0`` … ``C_5`` plus M6 release probes.
 
 See the curriculum paragraph at the end of §8 of
 ``docs/architecture/08-training-system.md`` and the VPM-0 minimal
@@ -20,6 +20,7 @@ Layout:
   entailment checking, round-trip realization checking, calibrated
   uncertainty, intent-entropy gates.
 - ``c5/`` — continual compression with replay-safe macro admission.
+- ``hard_domains.py`` — M6 red-team and held-out hard-domain probes.
 
 Advancement requires: held-out certified utility, calibrated anytime
 false-pass bounds, calibrated dependence residuals, positive frontier
@@ -56,12 +57,21 @@ from vpm.tasks.c4 import stage_spec as c4_stage
 from vpm.tasks.c5 import C5MacroCandidate, macro_replay_curriculum
 from vpm.tasks.c5 import stage_spec as c5_stage
 from vpm.tasks.hard_domains import HardDomain, HardDomainTask, hard_domain_curriculum
+from vpm.tasks.hard_domains import stage_spec as m6_stage
 from vpm.tasks.spec import StageSpec
 
 
 def stages() -> tuple[StageSpec, ...]:
     """Return runtime-visible metadata for every curriculum package."""
-    return (c0_stage(), c1_stage(), c2_stage(), c3_stage(), c4_stage(), c5_stage())
+    return (
+        c0_stage(),
+        c1_stage(),
+        c2_stage(),
+        c3_stage(),
+        c4_stage(),
+        c5_stage(),
+        m6_stage(),
+    )
 
 
 __all__ = [

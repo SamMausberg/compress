@@ -102,17 +102,23 @@ def stage_criterion() -> ReleaseCriterion:
     missing = tuple(
         spec.name for spec in specs if not spec.executable or not spec.implemented_components
     )
-    expected = ("C0", "C1", "C2", "C3", "C4", "C5")
+    expected = ("C0", "C1", "C2", "C3", "C4", "C5", "M6")
     names = tuple(spec.name for spec in specs)
     blockers: list[str] = []
     if names != expected:
         blockers.append(f"stage order mismatch: {names}")
     blockers.extend(f"{name} lacks executable components" for name in missing)
+    blockers.extend(
+        f"{spec.name} stage blocker: {blocker}" for spec in specs for blocker in spec.blockers
+    )
     return ReleaseCriterion(
         criterion_id="stages_m0_m6",
         summary="M0-M6 curriculum stages are runtime-visible and executable.",
         passed=not blockers,
-        evidence=tuple(f"{spec.name}:{','.join(spec.implemented_components)}" for spec in specs),
+        evidence=tuple(
+            f"{spec.name}:{','.join(spec.implemented_components)}:blockers={len(spec.blockers)}"
+            for spec in specs
+        ),
         blockers=tuple(blockers),
     )
 
