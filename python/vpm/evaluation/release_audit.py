@@ -6,7 +6,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from vpm.evaluation.ablations import evaluate_ablations
-from vpm.evaluation.baselines import BaselineSuite, evaluate_baseline_suite
+from vpm.evaluation.baselines import (
+    BaselineAudit,
+    BaselineFamily,
+    BaselineStatus,
+    BaselineSuite,
+    evaluate_baseline_suite,
+    external_baseline,
+)
 from vpm.evaluation.failure_modes import FailureModeReport, evaluate_failure_modes
 from vpm.evaluation.hard_domains import HardDomainReport, evaluate_hard_domains
 from vpm.evaluation.red_team import RedTeamReport
@@ -66,6 +73,11 @@ def evaluate_release_readiness(limit: int = 0) -> ReleaseReadinessReport:
     failure_modes = evaluate_failure_modes()
     baselines = evaluate_baseline_suite(limit=limit)
     hard_domains = evaluate_hard_domains()
+    hard_llm = external_baseline(
+        BaselineFamily.LLM,
+        "VPM_HARD_LLM_BASELINE_JSON",
+        max_compute_units=float(hard_domains.tasks),
+    )
     red_team = RedTeamReport(
         failures=failure_modes,
         ablations=evaluate_ablations(),
@@ -78,6 +90,7 @@ def evaluate_release_readiness(limit: int = 0) -> ReleaseReadinessReport:
             red_team_criterion(red_team),
             hard_domain_criterion(hard_domains),
             baseline_criterion(baselines),
+            hard_domain_llm_baseline_criterion(hard_llm),
             ci_criterion(),
         )
     )
@@ -174,6 +187,26 @@ def baseline_criterion(report: BaselineSuite) -> ReleaseCriterion:
         evidence=tuple(
             f"{baseline.family.value}:{baseline.status.value}:{baseline.reason}"
             for baseline in report.baselines
+        ),
+        blockers=blockers,
+    )
+
+
+def hard_domain_llm_baseline_criterion(baseline: BaselineAudit) -> ReleaseCriterion:
+    """Audit same-budget external LLM comparison on held-out hard domains."""
+    blockers = ()
+    if baseline.status is not BaselineStatus.EXECUTED:
+        blockers = (f"missing executed hard-domain LLM baseline: {baseline.reason}",)
+    return ReleaseCriterion(
+        criterion_id="hard_domain_llm_baseline",
+        summary="Held-out hard domains have a same-budget external LLM baseline.",
+        passed=not blockers,
+        evidence=(
+            f"status={baseline.status.value}",
+            f"solve_rate={baseline.solve_rate}",
+            f"compute_units={baseline.compute_units}",
+            f"max_compute_units={baseline.max_compute_units}",
+            f"reason={baseline.reason}",
         ),
         blockers=blockers,
     )

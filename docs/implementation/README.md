@@ -170,10 +170,12 @@ certified utility positive; all Criterion 1 failure clauses unfired.
   hard-tasks.jsonl`, then `vpm score-hard-llm-baseline
   hard-predictions.jsonl --output hard-llm-baseline.json`. The hard-domain
   prediction JSONL must provide `task_id`, `answer`, and `compute_units`;
-  exported prompts include evidence but not gold answers.
+  exported prompts include evidence but not gold answers. Set
+  `VPM_HARD_LLM_BASELINE_JSON` to the scored hard-domain baseline JSON when
+  running `vpm eval-release`.
 - `vpm eval-release --json` runs the objective-facing release audit. It is
   expected to stay `passed=false` until the same-budget external LLM
-  baseline is actually configured and executed.
+  baselines are actually configured and executed.
 
 ## Known risks
 
