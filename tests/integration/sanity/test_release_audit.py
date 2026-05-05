@@ -6,7 +6,11 @@ import json
 
 import pytest
 
+from vpm.evaluation.llm_baseline_c1 import score_llm_baseline_predictions
+from vpm.evaluation.llm_baseline_hard import score_hard_llm_baseline_predictions
 from vpm.evaluation.release_audit import evaluate_release_readiness
+from vpm.tasks.c1 import schema_split
+from vpm.tasks.hard_domains import hard_domain_curriculum
 
 pytestmark = pytest.mark.sanity
 
@@ -47,9 +51,42 @@ def test_release_readiness_accepts_configured_llm_baseline_artifacts(
 ) -> None:
     c1 = tmp_path / "llm.json"
     hard = tmp_path / "hard-llm.json"
-    c1.write_text(json.dumps({"name": "external-llm-c1", "solve_rate": 0.0, "compute_units": 1.0}))
+    c1_predictions = tmp_path / "llm-predictions.jsonl"
+    hard_predictions = tmp_path / "hard-llm-predictions.jsonl"
+    _train, heldout = schema_split(limit=0)
+    c1_predictions.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "task_id": task.task_id,
+                    "operation": task.operation,
+                    "compute_units": 1.0,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+            for task in heldout
+        )
+    )
+    hard_predictions.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "task_id": task.task_id,
+                    "answer": task.expected,
+                    "compute_units": 1.0,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+            for task in hard_domain_curriculum()
+        )
+    )
+    c1.write_text(
+        json.dumps(score_llm_baseline_predictions(c1_predictions, limit=0).to_external_json())
+    )
     hard.write_text(
-        json.dumps({"name": "external-llm-hard", "solve_rate": 0.0, "compute_units": 1.0})
+        json.dumps(score_hard_llm_baseline_predictions(hard_predictions).to_external_json())
     )
     monkeypatch.setenv("VPM_LLM_BASELINE_JSON", str(c1))
     monkeypatch.setenv("VPM_HARD_LLM_BASELINE_JSON", str(hard))

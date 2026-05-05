@@ -166,11 +166,17 @@ class LlmBaselineScore:
         if self.status is not BaselineStatus.EXECUTED:
             raise ValueError("cannot export invalid external LLM baseline score")
         return {
+            "artifact_kind": "vpm-external-llm-baseline-v1",
             "name": self.name,
+            "task_kind": "c1",
+            "status": self.status.value,
+            "tasks": self.tasks,
             "solve_rate": self.solve_rate,
             "operation_accuracy": self.operation_accuracy,
             "mean_candidates": 1.0 if self.tasks else 0.0,
             "compute_units": self.compute_units,
+            "max_compute_units": self.max_compute_units,
+            "traces": [trace.to_dict() for trace in self.traces],
         }
 
     def to_dict(self) -> dict[str, object]:

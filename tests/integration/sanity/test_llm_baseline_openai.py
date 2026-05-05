@@ -146,6 +146,8 @@ def test_openai_release_runner_writes_scored_baseline_jsons(tmp_path: Path) -> N
     assert artifacts.passed is True
     assert artifacts.c1_baseline_json.exists()
     assert artifacts.hard_baseline_json.exists()
+    assert json.loads(artifacts.c1_baseline_json.read_text())["task_kind"] == "c1"
+    assert json.loads(artifacts.hard_baseline_json.read_text())["task_kind"] == "hard"
     assert artifacts.env_exports == (
         f"VPM_LLM_BASELINE_JSON={artifacts.c1_baseline_json}",
         f"VPM_HARD_LLM_BASELINE_JSON={artifacts.hard_baseline_json}",

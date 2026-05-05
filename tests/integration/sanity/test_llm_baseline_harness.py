@@ -57,6 +57,9 @@ def test_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> None:
     assert report.operation_accuracy == 1.0
     assert report.compute_units == len(heldout)
     assert report.to_external_json()["compute_units"] == len(heldout)
+    assert report.to_external_json()["artifact_kind"] == "vpm-external-llm-baseline-v1"
+    assert report.to_external_json()["task_kind"] == "c1"
+    assert len(report.to_external_json()["traces"]) == len(heldout)
 
 
 def test_llm_baseline_scoring_rejects_missing_compute_units(tmp_path) -> None:
@@ -121,7 +124,10 @@ def test_cli_exports_and_scores_llm_baseline(tmp_path) -> None:
     )
     payload = json.loads(completed.stdout)
     assert payload["status"] == "executed"
-    assert json.loads(scored.read_text())["solve_rate"] == 1.0
+    scored_payload = json.loads(scored.read_text())
+    assert scored_payload["solve_rate"] == 1.0
+    assert scored_payload["artifact_kind"] == "vpm-external-llm-baseline-v1"
+    assert scored_payload["task_kind"] == "c1"
 
 
 def test_hard_llm_baseline_export_omits_gold_answers(tmp_path) -> None:
@@ -157,6 +163,9 @@ def test_hard_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> Non
     assert report.solve_rate == 1.0
     assert report.compute_units == len(hard_domain_curriculum())
     assert report.to_external_json()["solve_rate"] == 1.0
+    assert report.to_external_json()["artifact_kind"] == "vpm-external-llm-baseline-v1"
+    assert report.to_external_json()["task_kind"] == "hard"
+    assert len(report.to_external_json()["traces"]) == len(hard_domain_curriculum())
 
 
 def test_cli_exports_and_scores_hard_llm_baseline(tmp_path) -> None:
@@ -202,4 +211,7 @@ def test_cli_exports_and_scores_hard_llm_baseline(tmp_path) -> None:
     )
     payload = json.loads(completed.stdout)
     assert payload["status"] == "executed"
-    assert json.loads(scored.read_text())["solve_rate"] == 1.0
+    scored_payload = json.loads(scored.read_text())
+    assert scored_payload["solve_rate"] == 1.0
+    assert scored_payload["artifact_kind"] == "vpm-external-llm-baseline-v1"
+    assert scored_payload["task_kind"] == "hard"
