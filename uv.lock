@@ -2161,7 +2161,7 @@ dev = [
 ]
 docs = [
     { name = "mkdocs-material", specifier = ">=9.7" },
-    { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0" },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.4" },
 ]
 
 [[package]]
