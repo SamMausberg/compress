@@ -15,6 +15,24 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm.tasks.c0 import C0Task, C0Value, value_token
+from vpm.tasks.c1.synthesis import (
+    MultiStepSynthesisTask,
+    MultiStepSynthesisTrace,
+    SynthesisStep,
+    apply_synthesis_operation,
+    execute_synthesis_program,
+    multi_step_synthesis_curriculum,
+    run_multistep_synthesis,
+    same_synthesis_value,
+)
+from vpm.tasks.c1.theorem import (
+    ProofStep,
+    TheoremFragmentTask,
+    TheoremProofTrace,
+    parse_implication,
+    prove_theorem_fragment,
+    theorem_fragment_curriculum,
+)
 from vpm.tasks.spec import StageSpec
 
 
@@ -55,163 +73,6 @@ class C1Task:
         )
 
 
-@dataclass(frozen=True)
-class SynthesisStep:
-    """One typed operation in a candidate synthesized program."""
-
-    operation: str
-    left: str
-    right: str
-    output: str
-
-    def to_dict(self) -> dict[str, object]:
-        """JSON-friendly synthesis step."""
-        return {
-            "operation": self.operation,
-            "left": self.left,
-            "right": self.right,
-            "output": self.output,
-        }
-
-
-@dataclass(frozen=True)
-class MultiStepSynthesisTask:
-    """Hidden C1 program-synthesis task with candidate multi-step programs."""
-
-    task_id: str
-    bindings: tuple[tuple[str, C0Value], ...]
-    expected: C0Value
-    candidates: tuple[tuple[SynthesisStep, ...], ...]
-
-    @property
-    def observation(self) -> str:
-        """Observation hides the selected program while exposing typed examples."""
-        bindings = ",".join(f"{name}={value_token(value)}" for name, value in self.bindings)
-        return f"synthesize {bindings} -> {value_token(self.expected)}"
-
-    def to_dict(self) -> dict[str, object]:
-        """JSON-friendly synthesis task."""
-        return {
-            "task_id": self.task_id,
-            "bindings": self.bindings,
-            "expected": self.expected,
-            "candidates": [[step.to_dict() for step in candidate] for candidate in self.candidates],
-        }
-
-
-@dataclass(frozen=True)
-class MultiStepSynthesisTrace:
-    """Selected multi-step synthesis candidate and verifier outcome."""
-
-    task_id: str
-    expected: C0Value
-    output: C0Value | None
-    selected_index: int | None
-    selected_steps: tuple[SynthesisStep, ...]
-    candidates_tested: int
-    errors: tuple[str, ...]
-
-    @property
-    def multi_step(self) -> bool:
-        """True when the selected program has more than one step."""
-        return len(self.selected_steps) > 1
-
-    @property
-    def passed(self) -> bool:
-        """True when a typed multi-step program matched the expected value."""
-        return self.multi_step and same_synthesis_value(self.output, self.expected)
-
-    def to_dict(self) -> dict[str, object]:
-        """JSON-friendly synthesis trace."""
-        return {
-            "task_id": self.task_id,
-            "expected": self.expected,
-            "output": self.output,
-            "selected_index": self.selected_index,
-            "selected_steps": [step.to_dict() for step in self.selected_steps],
-            "candidates_tested": self.candidates_tested,
-            "multi_step": self.multi_step,
-            "passed": self.passed,
-            "errors": self.errors,
-        }
-
-
-@dataclass(frozen=True)
-class TheoremFragmentTask:
-    """Small propositional theorem-proving fragment."""
-
-    task_id: str
-    premises: tuple[str, ...]
-    goal: str
-    expected_steps: int
-
-    @property
-    def observation(self) -> str:
-        """Compact theorem fragment observation."""
-        return f"prove {self.goal} from {','.join(self.premises)}"
-
-    def to_dict(self) -> dict[str, object]:
-        """JSON-friendly theorem task."""
-        return {
-            "task_id": self.task_id,
-            "premises": self.premises,
-            "goal": self.goal,
-            "expected_steps": self.expected_steps,
-        }
-
-
-@dataclass(frozen=True)
-class ProofStep:
-    """One checked propositional proof step."""
-
-    rule: str
-    antecedent: str
-    implication: str
-    conclusion: str
-
-    def to_dict(self) -> dict[str, object]:
-        """JSON-friendly proof step."""
-        return {
-            "rule": self.rule,
-            "antecedent": self.antecedent,
-            "implication": self.implication,
-            "conclusion": self.conclusion,
-        }
-
-
-@dataclass(frozen=True)
-class TheoremProofTrace:
-    """Proof trace for one theorem fragment."""
-
-    task_id: str
-    goal: str
-    derived: tuple[str, ...]
-    proof_steps: tuple[ProofStep, ...]
-    expected_steps: int
-
-    @property
-    def proven(self) -> bool:
-        """True when the goal was derived."""
-        return self.goal in self.derived
-
-    @property
-    def passed(self) -> bool:
-        """True when the proof derives the goal in the expected step budget."""
-        return self.proven and len(self.proof_steps) == self.expected_steps
-
-    def to_dict(self) -> dict[str, object]:
-        """JSON-friendly theorem proof trace."""
-        return {
-            "task_id": self.task_id,
-            "goal": self.goal,
-            "derived": self.derived,
-            "proof_steps": [step.to_dict() for step in self.proof_steps],
-            "expected_steps": self.expected_steps,
-            "proven": self.proven,
-            "passed": self.passed,
-        }
-
-
 def hidden_schema_curriculum(limit: int = 3) -> list[C1Task]:
     """Build a deterministic hidden-schema curriculum over typed C0 relations."""
     numbers = list(range(-limit, limit + 1))
@@ -233,119 +94,6 @@ def hidden_schema_curriculum(limit: int = 3) -> list[C1Task]:
         for right in (False, True)
     )
     return tasks
-
-
-def multi_step_synthesis_curriculum() -> tuple[MultiStepSynthesisTask, ...]:
-    """Build typed multi-step synthesis probes."""
-    return (
-        MultiStepSynthesisTask(
-            task_id="c1-synth-add-then-mul",
-            bindings=(("x", 2), ("y", 3), ("z", 4)),
-            expected=20,
-            candidates=(
-                (SynthesisStep("mul", "x", "y", "out"),),
-                (
-                    SynthesisStep("add", "x", "y", "sum"),
-                    SynthesisStep("mul", "sum", "z", "out"),
-                ),
-            ),
-        ),
-        MultiStepSynthesisTask(
-            task_id="c1-synth-concat-then-eq",
-            bindings=(("left", "ab"), ("right", "cd"), ("target", "abcd")),
-            expected=True,
-            candidates=(
-                (SynthesisStep("concat", "left", "right", "out"),),
-                (
-                    SynthesisStep("concat", "left", "right", "joined"),
-                    SynthesisStep("eq", "joined", "target", "out"),
-                ),
-            ),
-        ),
-    )
-
-
-def theorem_fragment_curriculum() -> tuple[TheoremFragmentTask, ...]:
-    """Build small propositional theorem-proving fragments."""
-    return (
-        TheoremFragmentTask(
-            task_id="c1-proof-modus-ponens",
-            premises=("p", "p->q"),
-            goal="q",
-            expected_steps=1,
-        ),
-        TheoremFragmentTask(
-            task_id="c1-proof-two-hop-chain",
-            premises=("rain", "rain->wet", "wet->slippery"),
-            goal="slippery",
-            expected_steps=2,
-        ),
-    )
-
-
-def run_multistep_synthesis(task: MultiStepSynthesisTask) -> MultiStepSynthesisTrace:
-    """Select the first candidate program that exactly verifies."""
-    errors: list[str] = []
-    for index, candidate in enumerate(task.candidates):
-        try:
-            output = execute_synthesis_program(task.bindings, candidate)
-        except ValueError as exc:
-            errors.append(str(exc))
-            continue
-        if same_synthesis_value(output, task.expected):
-            return MultiStepSynthesisTrace(
-                task_id=task.task_id,
-                expected=task.expected,
-                output=output,
-                selected_index=index,
-                selected_steps=candidate,
-                candidates_tested=index + 1,
-                errors=tuple(errors),
-            )
-    return MultiStepSynthesisTrace(
-        task_id=task.task_id,
-        expected=task.expected,
-        output=None,
-        selected_index=None,
-        selected_steps=(),
-        candidates_tested=len(task.candidates),
-        errors=tuple(errors),
-    )
-
-
-def prove_theorem_fragment(task: TheoremFragmentTask) -> TheoremProofTrace:
-    """Forward-chain a propositional theorem fragment under modus ponens."""
-    known = {premise for premise in task.premises if parse_implication(premise) is None}
-    implications = tuple(
-        (premise, parsed)
-        for premise in task.premises
-        if (parsed := parse_implication(premise)) is not None
-    )
-    steps: list[ProofStep] = []
-    changed = True
-    while changed and task.goal not in known:
-        changed = False
-        for implication, (antecedent, conclusion) in implications:
-            if antecedent in known and conclusion not in known:
-                known.add(conclusion)
-                steps.append(
-                    ProofStep(
-                        rule="modus_ponens",
-                        antecedent=antecedent,
-                        implication=implication,
-                        conclusion=conclusion,
-                    )
-                )
-                changed = True
-                if conclusion == task.goal:
-                    break
-    return TheoremProofTrace(
-        task_id=task.task_id,
-        goal=task.goal,
-        derived=tuple(sorted(known)),
-        proof_steps=tuple(steps),
-        expected_steps=task.expected_steps,
-    )
 
 
 def schema_split(limit: int = 3) -> tuple[list[C1Task], list[C1Task]]:
@@ -388,60 +136,6 @@ def stable_task_key(task: C1Task) -> int:
     return sum((index + 1) * ord(char) for index, char in enumerate(raw))
 
 
-def execute_synthesis_program(
-    bindings: tuple[tuple[str, C0Value], ...],
-    program: tuple[SynthesisStep, ...],
-) -> C0Value | None:
-    """Execute a typed candidate synthesis program."""
-    env = dict(bindings)
-    for step in program:
-        if step.left not in env or step.right not in env:
-            raise ValueError(f"unbound synthesis input in {step.output}")
-        env[step.output] = apply_synthesis_operation(
-            step.operation,
-            env[step.left],
-            env[step.right],
-        )
-    return env[program[-1].output] if program else None
-
-
-def apply_synthesis_operation(operation: str, left: C0Value, right: C0Value) -> C0Value:
-    """Apply one supported typed synthesis operation."""
-    if operation in {"add", "mul"}:
-        if (
-            not isinstance(left, int)
-            or not isinstance(right, int)
-            or isinstance(left, bool)
-            or isinstance(right, bool)
-        ):
-            raise ValueError(f"{operation} expects integer operands")
-        return left + right if operation == "add" else left * right
-    if operation == "concat":
-        if not isinstance(left, str) or not isinstance(right, str):
-            raise ValueError("concat expects text operands")
-        return left + right
-    if operation == "eq":
-        return type(left) is type(right) and left == right
-    raise ValueError(f"unsupported synthesis operation: {operation}")
-
-
-def same_synthesis_value(left: object, right: object) -> bool:
-    """Compare synthesized values without bool/int coercion."""
-    return type(left) is type(right) and left == right
-
-
-def parse_implication(claim: str) -> tuple[str, str] | None:
-    """Parse a compact propositional implication."""
-    if "->" not in claim:
-        return None
-    left, right = claim.split("->", maxsplit=1)
-    antecedent = left.strip()
-    conclusion = right.strip()
-    if not antecedent or not conclusion:
-        return None
-    return antecedent, conclusion
-
-
 def stage_spec() -> StageSpec:
     """Runtime metadata for the C1 curriculum stage."""
     return StageSpec(
@@ -475,6 +169,7 @@ __all__ = [
     "parse_implication",
     "prove_theorem_fragment",
     "run_multistep_synthesis",
+    "same_synthesis_value",
     "schema_split",
     "schema_task",
     "stage_spec",
