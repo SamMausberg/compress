@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vpm._reports import float_field, object_list, object_map
+from vpm.audit.external_components import ExternalComponentReport
 from vpm.evaluation.compression import CompressionReplayReport, evaluate_c5
 from vpm.evaluation.dialogue import DialogueEvaluationReport, evaluate_c4
-from vpm.evaluation.external_components import ExternalComponentReport
 from vpm.evaluation.open_domain import OpenDomainAmbiguityReport
 from vpm.infer import InferenceResult, run_task, run_task_candidate
 from vpm.tasks.c0 import C0Task, curriculum

@@ -76,7 +76,7 @@ rise.
 > - Ablation runner that toggles each architectural component listed above
 >   → `python/vpm/evaluation/ablations.py`.
 > - Failure criterion (Criterion 1) is encoded as a
->   `vpm.evaluation.failure_modes:FailureMode` enum; CI integration tests
+>   `vpm.audit.failure_modes:FailureMode` enum; CI integration tests
 >   under `tests/integration/failure_modes/` assert each clause for the
 >   shipped baseline.
 > - VPM-0 minimal implementation entry point → `examples/vpm0/run.py` (see

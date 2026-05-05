@@ -12,6 +12,11 @@ from vpm._llm_baseline_cli import (
     register_hard_llm_baseline_eval_commands,
     register_llm_baseline_eval_commands,
 )
+from vpm.audit.external_components import evaluate_external_components
+from vpm.audit.failure_modes import evaluate_failure_modes
+from vpm.audit.objective_audit import evaluate_objective_completion
+from vpm.audit.red_team import red_team_replay
+from vpm.audit.release_audit import evaluate_release_readiness
 from vpm.evaluation import (
     evaluate_c0,
     evaluate_c1,
@@ -23,14 +28,9 @@ from vpm.evaluation import (
 from vpm.evaluation.ablations import evaluate_ablations
 from vpm.evaluation.baselines import evaluate_baseline_suite
 from vpm.evaluation.compute_accounting import evaluate_compute_accounting
-from vpm.evaluation.external_components import evaluate_external_components
-from vpm.evaluation.failure_modes import evaluate_failure_modes
 from vpm.evaluation.hard_domains import evaluate_hard_domains
-from vpm.evaluation.objective_audit import evaluate_objective_completion
 from vpm.evaluation.open_domain import evaluate_open_domain_ambiguity
 from vpm.evaluation.phase_transition import evaluate_phase_transition
-from vpm.evaluation.red_team import red_team_replay
-from vpm.evaluation.release_audit import evaluate_release_readiness
 from vpm.evaluation.saturation import evaluate_saturation
 from vpm.retrieval.calibration import evaluate_recall_shift
 from vpm.verifiers.dependence import evaluate_dependence_shift
