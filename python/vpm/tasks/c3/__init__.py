@@ -17,6 +17,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from vpm.tasks.c0 import C0Task, arithmetic_task, concat_task
+from vpm.tasks.c3.tools import (
+    ToolInvocation,
+    ToolSandboxReport,
+    ToolSandboxTrace,
+    run_tool_invocation,
+    run_tool_sandbox_suite,
+    tool_sandbox_curriculum,
+)
 from vpm.tasks.spec import StageSpec
 
 
@@ -98,9 +106,20 @@ def stage_spec() -> StageSpec:
             "authority-lattice",
             "risk-gate",
             "adversarial-policy-probes",
+            "tool-sandbox-runner",
         ),
-        blockers=("tool sandbox runner", "rollback-credit ledger"),
+        blockers=("rollback-credit ledger",),
     )
 
 
-__all__ = ["C3PolicyProbe", "policy_probe_curriculum", "stage_spec"]
+__all__ = [
+    "C3PolicyProbe",
+    "ToolInvocation",
+    "ToolSandboxReport",
+    "ToolSandboxTrace",
+    "policy_probe_curriculum",
+    "run_tool_invocation",
+    "run_tool_sandbox_suite",
+    "stage_spec",
+    "tool_sandbox_curriculum",
+]

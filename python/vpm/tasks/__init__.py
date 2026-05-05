@@ -50,7 +50,16 @@ from vpm.tasks.c1 import C1Task, as_c0_tasks, hidden_schema_curriculum, schema_s
 from vpm.tasks.c1 import stage_spec as c1_stage
 from vpm.tasks.c2 import ActiveTestTrace, C2Task, active_curriculum, active_test
 from vpm.tasks.c2 import stage_spec as c2_stage
-from vpm.tasks.c3 import C3PolicyProbe, policy_probe_curriculum
+from vpm.tasks.c3 import (
+    C3PolicyProbe,
+    ToolInvocation,
+    ToolSandboxReport,
+    ToolSandboxTrace,
+    policy_probe_curriculum,
+    run_tool_invocation,
+    run_tool_sandbox_suite,
+    tool_sandbox_curriculum,
+)
 from vpm.tasks.c3 import stage_spec as c3_stage
 from vpm.tasks.c4 import C4DialogueTask, dialogue_curriculum, gate_dialogue
 from vpm.tasks.c4 import stage_spec as c4_stage
@@ -86,6 +95,9 @@ __all__ = [
     "HardDomain",
     "HardDomainTask",
     "StageSpec",
+    "ToolInvocation",
+    "ToolSandboxReport",
+    "ToolSandboxTrace",
     "active_curriculum",
     "active_test",
     "addition_task",
@@ -102,8 +114,11 @@ __all__ = [
     "macro_replay_curriculum",
     "multiplication_task",
     "policy_probe_curriculum",
+    "run_tool_invocation",
+    "run_tool_sandbox_suite",
     "schema_split",
     "stages",
+    "tool_sandbox_curriculum",
     "typed_hidden_task",
     "typed_task",
 ]

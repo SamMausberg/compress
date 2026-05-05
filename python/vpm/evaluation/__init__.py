@@ -2,15 +2,9 @@
 
 See ``docs/architecture/09-evaluation-failure.md``.
 
-This package will hold:
+Implemented harnesses include:
 
-- ``metrics.py``         — every metric named in the §9 reporting
-  paragraph (certified utility, solve rate, ECE, support loss, …).
-- ``strata.py``          — stratification by evidence level, domain
-  route, mode, and curriculum stage.
-- ``ablations.py``       — toggle each architectural component listed
-  in §9; the runner is the only canonical way to produce the
-  ablation table.
+- ``ablations.py``       — executable control ablations.
 - ``failure_modes.py``   — Criterion 1 clauses encoded as a
   ``FailureMode`` enum and a per-clause detector.
 - ``phase_transition.py`` — the compression phase-transition
@@ -38,7 +32,12 @@ from vpm.evaluation.open_domain import OpenDomainAmbiguityReport
 from vpm.infer import InferenceResult, run_task, run_task_candidate
 from vpm.tasks.c0 import C0Task, curriculum
 from vpm.tasks.c1 import C1Task, hidden_schema_curriculum
-from vpm.tasks.c3 import C3PolicyProbe, policy_probe_curriculum
+from vpm.tasks.c3 import (
+    C3PolicyProbe,
+    ToolSandboxReport,
+    policy_probe_curriculum,
+    run_tool_sandbox_suite,
+)
 from vpm.verifiers import gate_passed
 
 
@@ -156,6 +155,7 @@ class PolicyEvaluationReport:
     controls_passed: int
     violations: int
     traces: tuple[PolicyGateTrace, ...]
+    tool_sandbox: ToolSandboxReport
 
     @property
     def violation_rate(self) -> float:
@@ -171,6 +171,7 @@ class PolicyEvaluationReport:
             "violations": self.violations,
             "violation_rate": self.violation_rate,
             "traces": [trace.to_dict() for trace in self.traces],
+            "tool_sandbox": self.tool_sandbox.to_dict(),
         }
 
 
@@ -198,6 +199,7 @@ def evaluate_c3(probes: list[C3PolicyProbe] | None = None) -> PolicyEvaluationRe
         controls_passed=sum(trace.gate_passed and trace.expected_pass for trace in traces),
         violations=sum(trace.violation for trace in traces),
         traces=traces,
+        tool_sandbox=run_tool_sandbox_suite(),
     )
 
 
@@ -297,6 +299,7 @@ __all__ = [
     "OpenDomainAmbiguityReport",
     "PolicyEvaluationReport",
     "PolicyGateTrace",
+    "ToolSandboxReport",
     "certificate",
     "evaluate_c0",
     "evaluate_c1",
