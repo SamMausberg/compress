@@ -21,7 +21,7 @@ This package will hold:
   cognitive-component checks.
 - ``open_domain.py``   — open-domain context and semantic ambiguity
   collapse checks.
-- ``llm_baseline.py``  — external LLM held-out task export and scorer.
+- ``llm_baseline.py``  — external LLM task export, runner, and scorer.
 - ``report.py``          — pretty-prints the metric table and writes
   JSON for CI consumption.
 """

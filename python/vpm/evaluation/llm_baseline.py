@@ -30,6 +30,13 @@ from vpm.evaluation.llm_baseline_hard import (
     score_hard_prediction,
     write_hard_llm_baseline_tasks,
 )
+from vpm.providers.openai_baseline import (
+    LlmTaskKind,
+    OpenAILlmConfig,
+    OpenAIResponder,
+    openai_config_from_env,
+    run_openai_llm_predictions,
+)
 
 __all__ = [
     "HardLlmBaselinePrediction",
@@ -40,16 +47,21 @@ __all__ = [
     "LlmBaselineScore",
     "LlmBaselineTaskSpec",
     "LlmBaselineTrace",
+    "LlmTaskKind",
+    "OpenAILlmConfig",
+    "OpenAIResponder",
     "hard_llm_baseline_tasks",
     "hard_llm_task_spec",
     "llm_baseline_tasks",
     "llm_task_spec",
     "normalize_hard_answer",
     "normalized_operation",
+    "openai_config_from_env",
     "parse_hard_prediction",
     "parse_prediction",
     "read_hard_llm_predictions",
     "read_llm_predictions",
+    "run_openai_llm_predictions",
     "score_hard_llm_baseline_predictions",
     "score_hard_prediction",
     "score_llm_baseline_predictions",
