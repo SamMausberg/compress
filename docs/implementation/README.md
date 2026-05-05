@@ -156,6 +156,10 @@ certified utility positive; all Criterion 1 failure clauses unfired.
 - External LLMs as anything other than ablated teachers with logged
   budgets and zero certificate authority (§8, paragraph on hidden
   compute).
+- Same-budget external LLM comparisons are accepted only through
+  `VPM_LLM_BASELINE_JSON`; the JSON must include `solve_rate` and
+  `compute_units`, and `eval-baselines` marks it invalid if the compute
+  exceeds the matched VPM budget.
 
 ## Known risks
 

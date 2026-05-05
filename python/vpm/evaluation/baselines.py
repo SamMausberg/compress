@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from vpm._reports import float_field, object_map
+from vpm._reports import object_map
 from vpm.evaluation import evaluate_c1
 from vpm.evaluation.neural_baselines import train_local_neural_baselines
 from vpm.tasks.c1 import as_c0_tasks, schema_split
@@ -30,6 +31,7 @@ class BaselineStatus(StrEnum):
 
     EXECUTED = "executed"
     NOT_CONFIGURED = "not_configured"
+    INVALID = "invalid"
 
 
 @dataclass(frozen=True)
@@ -44,6 +46,7 @@ class BaselineAudit:
     mean_candidates: float | None
     compute_units: float | None
     reason: str = ""
+    max_compute_units: float | None = None
 
     def to_dict(self) -> dict[str, object]:
         """JSON-friendly baseline audit."""
@@ -56,6 +59,7 @@ class BaselineAudit:
             "mean_candidates": self.mean_candidates,
             "compute_units": self.compute_units,
             "reason": self.reason,
+            "max_compute_units": self.max_compute_units,
         }
 
 
@@ -138,13 +142,18 @@ def evaluate_baseline_suite(limit: int = 2) -> BaselineSuite:
         )
     )
     external = tuple(
-        external_baseline(family, env_var)
+        external_baseline(family, env_var, max_compute_units=float(vpm.tasks))
         for family, env_var in ((BaselineFamily.LLM, "VPM_LLM_BASELINE_JSON"),)
     )
     return BaselineSuite(limit, tuple(executable) + external)
 
 
-def external_baseline(family: BaselineFamily, env_var: str) -> BaselineAudit:
+def external_baseline(
+    family: BaselineFamily,
+    env_var: str,
+    *,
+    max_compute_units: float,
+) -> BaselineAudit:
     """Load an externally produced baseline JSON report if configured."""
     configured = os.environ.get(env_var)
     if configured is None:
@@ -157,19 +166,54 @@ def external_baseline(family: BaselineFamily, env_var: str) -> BaselineAudit:
             None,
             None,
             f"{env_var} is not set",
+            max_compute_units,
         )
     payload = object_map(json.loads(Path(configured).read_text()))
     if payload is None:
         raise ValueError(f"{env_var} did not contain a JSON object")
+    solve_rate = required_float(payload, "solve_rate")
+    compute_units = required_float(payload, "compute_units")
+    errors = external_baseline_errors(solve_rate, compute_units, max_compute_units)
+    status = BaselineStatus.INVALID if errors else BaselineStatus.EXECUTED
     return BaselineAudit(
         str(payload.get("name", family.value)),
         family,
-        BaselineStatus.EXECUTED,
-        float_field(payload, "solve_rate"),
+        status,
+        solve_rate,
         optional_float(payload.get("operation_accuracy")),
         optional_float(payload.get("mean_candidates")),
-        optional_float(payload.get("compute_units")),
+        compute_units,
+        "; ".join(errors),
+        max_compute_units,
     )
+
+
+def external_baseline_errors(
+    solve_rate: float,
+    compute_units: float,
+    max_compute_units: float,
+) -> tuple[str, ...]:
+    """Return validation errors for an external matched baseline."""
+    errors: list[str] = []
+    if solve_rate < 0.0 or solve_rate > 1.0:
+        errors.append("solve_rate must be in [0, 1]")
+    if compute_units < 0.0:
+        errors.append("compute_units must be non-negative")
+    if compute_units > max_compute_units:
+        errors.append(
+            f"compute_units {compute_units:.3f} exceeds matched budget {max_compute_units:.3f}"
+        )
+    return tuple(errors)
+
+
+def required_float(payload: Mapping[str, object], field: str) -> float:
+    """Parse a required numeric JSON field."""
+    if field not in payload:
+        raise ValueError(f"missing required numeric JSON field: {field}")
+    value = payload[field]
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        return float(value)
+    raise ValueError(f"expected numeric JSON field: {field}")
 
 
 def optional_float(value: object) -> float | None:
@@ -187,4 +231,6 @@ __all__ = [
     "BaselineStatus",
     "BaselineSuite",
     "evaluate_baseline_suite",
+    "external_baseline",
+    "external_baseline_errors",
 ]
