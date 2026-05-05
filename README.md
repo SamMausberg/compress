@@ -171,7 +171,9 @@ The C3 executable subset adds adversarial authority/risk probes:
 `eval-c3 --json` checks that exactly verified actions are still rejected
 when labels or componentwise risk exceed the contract, and runs an
 allowlisted deterministic tool sandbox that rejects unknown, mis-typed, or
-unauthorized tool calls without charging hidden compute.
+unauthorized tool calls without charging hidden compute. It also audits a
+componentwise rollback-credit ledger so only in-cap, monitor-certified
+credits reduce cumulative risk.
 The C4 executable subset adds controlled source-grounded dialogue:
 `eval-c4 --json` renders only answers with source, rebuttal, entailment, and
 round-trip realization witnesses; contradicted answers are refused.

@@ -53,4 +53,4 @@ def test_c3_stage_metadata_marks_tool_sandbox_implemented() -> None:
 
     assert "tool-sandbox-runner" in c3.implemented_components
     assert "tool sandbox runner" not in c3.blockers
-    assert c3.blockers == ("rollback-credit ledger",)
+    assert c3.blockers == ()

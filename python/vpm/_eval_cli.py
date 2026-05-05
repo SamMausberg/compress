@@ -98,7 +98,8 @@ def register_curriculum_eval_commands(app: typer.Typer) -> None:
                 f"violation_rate={report.violation_rate:.3f} "
                 f"rejected={report.rejected} "
                 f"probes={report.probes} "
-                f"tool_sandbox_passed={report.tool_sandbox.passed}"
+                f"tool_sandbox_passed={report.tool_sandbox.passed} "
+                f"rollback_ledger_passed={report.rollback_ledger.passed}"
             )
 
     @app.command("eval-c4")

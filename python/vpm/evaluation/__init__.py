@@ -1,24 +1,4 @@
-"""§9 — Evaluation, failure modes, and minimal implementation.
-
-See ``docs/architecture/09-evaluation-failure.md``.
-
-Implemented harnesses include:
-
-- ``ablations.py``       — executable control ablations.
-- ``failure_modes.py``   — Criterion 1 clauses encoded as a
-  ``FailureMode`` enum and a per-clause detector.
-- ``phase_transition.py`` — the compression phase-transition
-  diagnostic that defines VPM-0 success (last paragraph of §9).
-- ``saturation.py``      — saturation diagnostic
-  ``sup_m LCB^seq A(m) ≤ 0`` (eq. 136).
-- ``external_components.py`` — external LLM authority and hidden
-  cognitive-component checks.
-- ``open_domain.py``   — open-domain context and semantic ambiguity
-  collapse checks.
-- ``llm_baseline.py``  — external LLM task export, runner, and scorer.
-- ``report.py``          — pretty-prints the metric table and writes
-  JSON for CI consumption.
-"""
+"""§9 evaluation, failure-mode, ablation, baseline, and release harnesses."""
 
 from __future__ import annotations
 
@@ -34,8 +14,10 @@ from vpm.tasks.c0 import C0Task, curriculum
 from vpm.tasks.c1 import C1Task, hidden_schema_curriculum
 from vpm.tasks.c3 import (
     C3PolicyProbe,
+    RollbackLedgerReport,
     ToolSandboxReport,
     policy_probe_curriculum,
+    run_rollback_ledger,
     run_tool_sandbox_suite,
 )
 from vpm.verifiers import gate_passed
@@ -156,6 +138,7 @@ class PolicyEvaluationReport:
     violations: int
     traces: tuple[PolicyGateTrace, ...]
     tool_sandbox: ToolSandboxReport
+    rollback_ledger: RollbackLedgerReport
 
     @property
     def violation_rate(self) -> float:
@@ -172,6 +155,7 @@ class PolicyEvaluationReport:
             "violation_rate": self.violation_rate,
             "traces": [trace.to_dict() for trace in self.traces],
             "tool_sandbox": self.tool_sandbox.to_dict(),
+            "rollback_ledger": self.rollback_ledger.to_dict(),
         }
 
 
@@ -200,6 +184,7 @@ def evaluate_c3(probes: list[C3PolicyProbe] | None = None) -> PolicyEvaluationRe
         violations=sum(trace.violation for trace in traces),
         traces=traces,
         tool_sandbox=run_tool_sandbox_suite(),
+        rollback_ledger=run_rollback_ledger(),
     )
 
 
@@ -299,6 +284,7 @@ __all__ = [
     "OpenDomainAmbiguityReport",
     "PolicyEvaluationReport",
     "PolicyGateTrace",
+    "RollbackLedgerReport",
     "ToolSandboxReport",
     "certificate",
     "evaluate_c0",

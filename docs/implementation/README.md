@@ -127,6 +127,9 @@ produce the expected regressions.
 - `C3` tool-use probes run through a deterministic allowlisted sandbox
   with authority, risk, and primitive-type checks before any tool compute is
   charged.
+- `C3` rollback probes maintain a cumulative risk ledger and apply rollback
+  credits only when they are within cap and backed by monitor/restoration
+  certificates.
 - Runtime metadata includes an explicit `M6` stage for red-team replay,
   ablations, hard-domain probes, and external-LLM task export. The release
   audit treats any `StageSpec.blockers` as release blockers.
