@@ -198,7 +198,7 @@ jobs:
           echo "Net additions: $NET (+$ADDED / -$REMOVED)"
       - name: Comment if PR exceeds 1,200 net lines
         if: steps.diffstat.outputs.net > 1200
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const net = ${{ steps.diffstat.outputs.net }};
