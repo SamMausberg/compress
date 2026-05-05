@@ -176,7 +176,7 @@ and state traces, blocked-cell avoidance, and shortest-path certificates.
 The C3 executable subset adds adversarial authority/risk probes:
 `eval-c3 --json` checks that exactly verified actions are still rejected
 when labels or componentwise risk exceed the contract, and runs an
-allowlisted deterministic tool sandbox that rejects unknown, mis-typed, or
+allowlisted deterministic tool sandbox that rejects unknown, mistyped, or
 unauthorized tool calls without charging hidden compute. It also audits a
 componentwise rollback-credit ledger so only in-cap, monitor-certified
 credits reduce cumulative risk.

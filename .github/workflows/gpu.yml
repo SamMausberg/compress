@@ -29,7 +29,7 @@ jobs:
     if: ${{ vars.GPU_RUNNER_AVAILABLE == 'true' }}
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
       - run: uv python install 3.14
