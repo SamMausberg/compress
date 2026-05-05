@@ -91,6 +91,7 @@ logs/
 wandb/
 mlruns/
 outputs/
+artifacts/
 *.ckpt
 *.pt
 *.safetensors
