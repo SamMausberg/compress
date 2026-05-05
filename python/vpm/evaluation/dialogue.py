@@ -17,6 +17,8 @@ class DialogueEvaluationReport:
     source_covered: int
     rebuttal_clear: int
     realization_ok: int
+    uncertainty_ok: int
+    mean_uncertainty: float
     violations: int
     traces: tuple[DialogueGateTrace, ...]
 
@@ -46,6 +48,11 @@ class DialogueEvaluationReport:
         return self.realization_ok / self.tasks if self.tasks else 0.0
 
     @property
+    def uncertainty_ok_rate(self) -> float:
+        """Fraction of tasks within the calibrated uncertainty threshold."""
+        return self.uncertainty_ok / self.tasks if self.tasks else 0.0
+
+    @property
     def violation_rate(self) -> float:
         """Fraction of tasks with a rendered output despite a failed witness."""
         return self.violations / self.tasks if self.tasks else 0.0
@@ -61,6 +68,8 @@ class DialogueEvaluationReport:
             "source_coverage_rate": self.source_coverage_rate,
             "rebuttal_clear_rate": self.rebuttal_clear_rate,
             "realization_ok_rate": self.realization_ok_rate,
+            "uncertainty_ok_rate": self.uncertainty_ok_rate,
+            "mean_uncertainty": self.mean_uncertainty,
             "violations": self.violations,
             "violation_rate": self.violation_rate,
             "traces": [trace.to_dict() for trace in self.traces],
@@ -78,6 +87,10 @@ def evaluate_c4(tasks: list[C4DialogueTask] | None = None) -> DialogueEvaluation
         source_covered=sum(trace.source_ok for trace in traces),
         rebuttal_clear=sum(trace.rebuttal_ok for trace in traces),
         realization_ok=sum(trace.realization_ok for trace in traces),
+        uncertainty_ok=sum(trace.uncertainty_ok for trace in traces),
+        mean_uncertainty=sum(trace.uncertainty for trace in traces) / len(traces)
+        if traces
+        else 0.0,
         violations=sum(trace.rendered != "refusal" and not trace.passed for trace in traces),
         traces=traces,
     )

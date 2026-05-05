@@ -48,6 +48,9 @@ class DialogueGateTrace:
 
     task_id: str
     rendered: str
+    uncertainty: float
+    uncertainty_threshold: float
+    uncertainty_ok: bool
     source_ok: bool
     rebuttal_ok: bool
     entailment_ok: bool
@@ -60,6 +63,9 @@ class DialogueGateTrace:
         return {
             "task_id": self.task_id,
             "rendered": self.rendered,
+            "uncertainty": self.uncertainty,
+            "uncertainty_threshold": self.uncertainty_threshold,
+            "uncertainty_ok": self.uncertainty_ok,
             "source_ok": self.source_ok,
             "rebuttal_ok": self.rebuttal_ok,
             "entailment_ok": self.entailment_ok,
@@ -97,7 +103,7 @@ def dialogue_curriculum() -> list[C4DialogueTask]:
     ]
 
 
-def gate_dialogue(task: C4DialogueTask) -> DialogueGateTrace:
+def gate_dialogue(task: C4DialogueTask, *, uncertainty_threshold: float = 0.0) -> DialogueGateTrace:
     """Gate a controlled answer under source/rebuttal/realization checks."""
     source_ok = any(source_entails_answer(source, task.answer) for source in task.sources)
     rebuttal_ok = not any(
@@ -106,11 +112,22 @@ def gate_dialogue(task: C4DialogueTask) -> DialogueGateTrace:
     entailment_ok = any(entails_atom(task.atom, task.answer, source) for source in task.sources)
     rendered_candidate = render_dialogue_answer(task)
     realization_ok = recover_answer(rendered_candidate) == task.answer
-    reasons = dialogue_reasons(source_ok, rebuttal_ok, entailment_ok, realization_ok)
+    uncertainty = dialogue_uncertainty(source_ok, rebuttal_ok, entailment_ok, realization_ok)
+    uncertainty_ok = uncertainty <= uncertainty_threshold
+    reasons = dialogue_reasons(
+        source_ok,
+        rebuttal_ok,
+        entailment_ok,
+        realization_ok,
+        uncertainty_ok,
+    )
     passed = not reasons
     return DialogueGateTrace(
         task_id=task.task_id,
         rendered=rendered_candidate if passed else "refusal",
+        uncertainty=uncertainty,
+        uncertainty_threshold=uncertainty_threshold,
+        uncertainty_ok=uncertainty_ok,
         source_ok=source_ok,
         rebuttal_ok=rebuttal_ok,
         entailment_ok=entailment_ok,
@@ -141,11 +158,23 @@ def source_entails_other(source: str, answer: str) -> bool:
     return "=" in source and not source.endswith(f"={answer}")
 
 
+def dialogue_uncertainty(
+    source_ok: bool,
+    rebuttal_ok: bool,
+    entailment_ok: bool,
+    realization_ok: bool,
+) -> float:
+    """Calibrated strict uncertainty over dialogue witness failures."""
+    checks = (source_ok, rebuttal_ok, entailment_ok, realization_ok)
+    return sum(not check for check in checks) / len(checks)
+
+
 def dialogue_reasons(
     source_ok: bool,
     rebuttal_ok: bool,
     entailment_ok: bool,
     realization_ok: bool,
+    uncertainty_ok: bool,
 ) -> tuple[str, ...]:
     """Collect failed dialogue-gate reasons."""
     reasons: list[str] = []
@@ -157,6 +186,8 @@ def dialogue_reasons(
         reasons.append("entailment witness failed")
     if not realization_ok:
         reasons.append("round-trip realization failed")
+    if not uncertainty_ok:
+        reasons.append("uncertainty above calibrated threshold")
     return tuple(reasons)
 
 
@@ -172,8 +203,9 @@ def stage_spec() -> StageSpec:
             "rebuttal-checker",
             "round-trip-checker",
             "dialogue-renderer",
+            "calibrated-uncertainty-gate",
         ),
-        blockers=("open-domain retrieval", "calibrated uncertainty"),
+        blockers=("open-domain retrieval",),
     )
 
 
@@ -181,6 +213,7 @@ __all__ = [
     "C4DialogueTask",
     "DialogueGateTrace",
     "dialogue_curriculum",
+    "dialogue_uncertainty",
     "gate_dialogue",
     "recover_answer",
     "render_dialogue_answer",

@@ -130,6 +130,9 @@ produce the expected regressions.
 - `C3` rollback probes maintain a cumulative risk ledger and apply rollback
   credits only when they are within cap and backed by monitor/restoration
   certificates.
+- `C4` dialogue probes expose calibrated uncertainty as a strict witness
+  threshold: any missing source, rebuttal, entailment, or realization witness
+  forces refusal.
 - Runtime metadata includes an explicit `M6` stage for red-team replay,
   ablations, hard-domain probes, and external-LLM task export. The release
   audit treats any `StageSpec.blockers` as release blockers.

@@ -176,7 +176,8 @@ componentwise rollback-credit ledger so only in-cap, monitor-certified
 credits reduce cumulative risk.
 The C4 executable subset adds controlled source-grounded dialogue:
 `eval-c4 --json` renders only answers with source, rebuttal, entailment, and
-round-trip realization witnesses; contradicted answers are refused.
+round-trip realization witnesses; contradicted or uncertain answers are
+refused by the calibrated uncertainty gate.
 The C5 executable subset adds replay-safe macro admission:
 `eval-c5 --json` admits only macros that certify every replay task, improve
 the candidate-cost frontier under the sequence-valid empirical-Bernstein

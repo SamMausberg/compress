@@ -181,12 +181,16 @@ def test_c4_dialogue_gates_require_source_rebuttal_and_realization() -> None:
     rejected = gate_dialogue(tasks[-1])
     assert passing.rendered.startswith("Paris ")
     assert passing.passed is True
+    assert passing.uncertainty == 0.0
+    assert passing.uncertainty_ok is True
     assert rejected.rendered == "refusal"
     assert "material rebuttal present" in rejected.reasons
+    assert "uncertainty above calibrated threshold" in rejected.reasons
 
     metrics = evaluate_c4(tasks)
     assert metrics.rendered == 2
     assert metrics.refused == 1
+    assert metrics.uncertainty_ok == 2
     assert metrics.violations == 0
     assert metrics.source_coverage_rate == 1.0
     assert metrics.realization_ok_rate == 1.0
@@ -303,6 +307,7 @@ def test_cli_runs_c4_dialogue_evaluation() -> None:
     payload = json.loads(completed.stdout)
     assert payload["rendered"] == 2
     assert payload["refused"] == 1
+    assert payload["uncertainty_ok_rate"] == 2 / 3
     assert payload["violation_rate"] == 0.0
 
 

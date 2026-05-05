@@ -114,6 +114,7 @@ def register_curriculum_eval_commands(app: typer.Typer) -> None:
             typer.echo(
                 f"render_rate={report.render_rate:.3f} "
                 f"refusal_rate={report.refusal_rate:.3f} "
+                f"uncertainty_ok={report.uncertainty_ok_rate:.3f} "
                 f"violations={report.violations}"
             )
 
