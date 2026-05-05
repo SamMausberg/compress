@@ -14,6 +14,7 @@ from vpm.evaluation.baselines import (
     BaselineStatus,
     external_baseline_errors,
     optional_float,
+    task_manifest,
 )
 from vpm.infer import run_task_candidate
 from vpm.substrate.prototype import OPERATIONS
@@ -109,6 +110,11 @@ class LlmBaselineScore:
         return len(self.traces)
 
     @property
+    def task_ids(self) -> tuple[str, ...]:
+        """Ordered held-out task ids covered by this score."""
+        return tuple(trace.task_id for trace in self.traces)
+
+    @property
     def solved(self) -> int:
         """Number of verifier-certified predictions."""
         return sum(trace.certified for trace in self.traces)
@@ -180,6 +186,7 @@ class LlmBaselineScore:
             "mean_candidates": 1.0 if self.tasks else 0.0,
             "compute_units": self.compute_units,
             "max_compute_units": self.max_compute_units,
+            "task_manifest": task_manifest(self.task_ids),
             "traces": [trace.to_dict() for trace in self.traces],
         }
 

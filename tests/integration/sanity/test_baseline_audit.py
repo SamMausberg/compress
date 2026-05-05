@@ -13,6 +13,7 @@ from vpm.evaluation.baselines import (
     BaselineStatus,
     evaluate_baseline_suite,
     external_baseline,
+    task_manifest,
 )
 
 pytestmark = pytest.mark.sanity
@@ -28,9 +29,10 @@ def external_llm_payload(
     """Return a scorer-shaped external LLM artifact for baseline-audit tests."""
     solved = round(tasks * solve_rate)
     if task_kind == "c1":
+        task_ids = tuple(f"c1-{index}" for index in range(tasks))
         traces = [
             {
-                "task_id": f"c1-{index}",
+                "task_id": task_ids[index],
                 "expected_operation": "add",
                 "predicted_operation": "add" if index < solved else "mul",
                 "certified": index < solved,
@@ -43,9 +45,10 @@ def external_llm_payload(
         ]
         extra: dict[str, object] = {"operation_accuracy": solve_rate}
     else:
+        task_ids = tuple(f"hard-{index}" for index in range(tasks))
         traces = [
             {
-                "task_id": f"hard-{index}",
+                "task_id": task_ids[index],
                 "domain": "formal",
                 "expected_answer": "42",
                 "predicted_answer": "42" if index < solved else "wrong",
@@ -67,6 +70,7 @@ def external_llm_payload(
         "mean_candidates": 1.0,
         "compute_units": compute_units,
         "max_compute_units": float(tasks),
+        "task_manifest": task_manifest(task_ids),
         "traces": traces,
         **extra,
     }
@@ -100,6 +104,7 @@ def test_external_llm_baseline_must_fit_matched_budget(
         "VPM_LLM_BASELINE_JSON",
         max_compute_units=1.0,
         task_kind="c1",
+        expected_task_ids=("c1-0",),
     )
     assert baseline.status is BaselineStatus.EXECUTED
     assert baseline.max_compute_units == 1.0
@@ -121,6 +126,7 @@ def test_compact_external_llm_summary_is_invalid(
         "VPM_LLM_BASELINE_JSON",
         max_compute_units=1.0,
         task_kind="c1",
+        expected_task_ids=("c1-0",),
     )
     assert baseline.status is BaselineStatus.INVALID
     assert "artifact_kind must be vpm-external-llm-baseline-v1" in baseline.reason
@@ -145,9 +151,35 @@ def test_traced_external_llm_artifact_requires_model(
         "VPM_LLM_BASELINE_JSON",
         max_compute_units=1.0,
         task_kind="c1",
+        expected_task_ids=("c1-0",),
     )
     assert baseline.status is BaselineStatus.INVALID
     assert "model must be a string" in baseline.reason
+
+
+def test_traced_external_llm_artifact_requires_expected_task_set(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = external_llm_payload()
+    traces = payload["traces"]
+    assert isinstance(traces, list)
+    trace = traces[0]
+    assert isinstance(trace, dict)
+    trace["task_id"] = "wrong-task"
+    report = tmp_path / "llm.json"
+    report.write_text(json.dumps(payload))
+    monkeypatch.setenv("VPM_LLM_BASELINE_JSON", str(report))
+
+    baseline = external_baseline(
+        BaselineFamily.LLM,
+        "VPM_LLM_BASELINE_JSON",
+        max_compute_units=1.0,
+        task_kind="c1",
+        expected_task_ids=("c1-0",),
+    )
+    assert baseline.status is BaselineStatus.INVALID
+    assert "trace task_ids must match" in baseline.reason
 
 
 def test_over_budget_external_llm_baseline_is_invalid(
@@ -163,6 +195,7 @@ def test_over_budget_external_llm_baseline_is_invalid(
         "VPM_LLM_BASELINE_JSON",
         max_compute_units=1.0,
         task_kind="c1",
+        expected_task_ids=("c1-0",),
     )
     assert baseline.status is BaselineStatus.INVALID
     assert "exceeds matched budget" in baseline.reason
@@ -181,6 +214,7 @@ def test_zero_compute_external_llm_baseline_is_invalid(
         "VPM_LLM_BASELINE_JSON",
         max_compute_units=1.0,
         task_kind="c1",
+        expected_task_ids=("c1-0",),
     )
     assert baseline.status is BaselineStatus.INVALID
     assert "compute_units must be positive" in baseline.reason

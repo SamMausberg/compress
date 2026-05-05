@@ -60,6 +60,9 @@ def test_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> None:
     assert report.to_external_json()["compute_units"] == len(heldout)
     assert report.to_external_json()["artifact_kind"] == "vpm-external-llm-baseline-v1"
     assert report.to_external_json()["task_kind"] == "c1"
+    assert report.to_external_json()["task_manifest"]["task_ids"] == tuple(
+        task.task_id for task in heldout
+    )
     traces = report.to_external_json()["traces"]
     assert isinstance(traces, list)
     assert len(traces) == len(heldout)
@@ -164,6 +167,7 @@ def test_cli_exports_and_scores_llm_baseline(tmp_path) -> None:
     assert scored_payload["solve_rate"] == 1.0
     assert scored_payload["artifact_kind"] == "vpm-external-llm-baseline-v1"
     assert scored_payload["task_kind"] == "c1"
+    assert scored_payload["task_manifest"]["task_ids"] == [task.task_id for task in heldout]
 
 
 def test_hard_llm_baseline_export_omits_gold_answers(tmp_path) -> None:
@@ -202,6 +206,9 @@ def test_hard_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> Non
     assert report.to_external_json()["solve_rate"] == 1.0
     assert report.to_external_json()["artifact_kind"] == "vpm-external-llm-baseline-v1"
     assert report.to_external_json()["task_kind"] == "hard"
+    assert report.to_external_json()["task_manifest"]["task_ids"] == tuple(
+        task.task_id for task in hard_domain_curriculum()
+    )
     traces = report.to_external_json()["traces"]
     assert isinstance(traces, list)
     assert len(traces) == len(hard_domain_curriculum())
@@ -279,3 +286,6 @@ def test_cli_exports_and_scores_hard_llm_baseline(tmp_path) -> None:
     assert scored_payload["solve_rate"] == 1.0
     assert scored_payload["artifact_kind"] == "vpm-external-llm-baseline-v1"
     assert scored_payload["task_kind"] == "hard"
+    assert scored_payload["task_manifest"]["task_ids"] == [
+        task.task_id for task in hard_domain_curriculum()
+    ]

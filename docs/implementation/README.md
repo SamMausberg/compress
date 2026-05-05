@@ -188,9 +188,10 @@ certified utility positive; all Criterion 1 failure clauses unfired.
 - Same-budget external LLM comparisons are accepted only through
   `VPM_LLM_BASELINE_JSON`; the JSON must be scorer-produced artifact format
   `vpm-external-llm-baseline-v1`, including `solve_rate`, `compute_units`,
-  task kind, full held-out task count, and per-task traces with model
-  provenance. `eval-baselines` marks it invalid if the trace provenance is
-  missing or the compute exceeds the matched VPM budget.
+  task kind, full held-out task count, a task-manifest digest, and per-task
+  traces with model provenance. `eval-baselines` marks it invalid if the
+  trace provenance is missing, the manifest does not match the expected
+  held-out split, or the compute exceeds the matched VPM budget.
 - Use `vpm export-llm-baseline tasks.jsonl --limit N` to write the exact
   held-out C1 prompts for an external LLM run, then score JSONL predictions
   with `vpm score-llm-baseline predictions.jsonl --limit N --output

@@ -7,6 +7,7 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+from hashlib import sha256
 from pathlib import Path
 from typing import cast
 
@@ -148,6 +149,7 @@ def evaluate_baseline_suite(limit: int = 2) -> BaselineSuite:
             env_var,
             max_compute_units=float(vpm.tasks),
             task_kind="c1",
+            expected_task_ids=tuple(task.task_id for task in heldout),
         )
         for family, env_var in ((BaselineFamily.LLM, "VPM_LLM_BASELINE_JSON"),)
     )
@@ -160,6 +162,7 @@ def external_baseline(
     *,
     max_compute_units: float,
     task_kind: str | None = None,
+    expected_task_ids: tuple[str, ...] | None = None,
 ) -> BaselineAudit:
     """Load an externally produced baseline JSON report if configured."""
     configured = os.environ.get(env_var)
@@ -190,6 +193,7 @@ def external_baseline(
         compute_units=compute_units,
         max_compute_units=max_compute_units,
         task_kind=task_kind,
+        expected_task_ids=expected_task_ids,
     )
     status = BaselineStatus.INVALID if errors else BaselineStatus.EXECUTED
     return BaselineAudit(
@@ -230,6 +234,7 @@ def external_baseline_artifact_errors(
     compute_units: float,
     max_compute_units: float,
     task_kind: str | None,
+    expected_task_ids: tuple[str, ...] | None,
 ) -> tuple[str, ...]:
     """Validate scorer-produced artifact provenance for external baselines."""
     if task_kind is None:
@@ -241,15 +246,7 @@ def external_baseline_artifact_errors(
         errors.append(f"task_kind must be {task_kind}")
     if payload.get("status") != BaselineStatus.EXECUTED.value:
         errors.append("status must be executed")
-    tasks = payload.get("tasks")
-    expected_tasks = int(max_compute_units) if max_compute_units.is_integer() else None
-    if not isinstance(tasks, int) or isinstance(tasks, bool) or tasks <= 0:
-        errors.append("tasks must be a positive integer")
-        task_count = 0
-    else:
-        task_count = tasks
-        if expected_tasks is not None and task_count != expected_tasks:
-            errors.append(f"tasks must cover the full held-out split ({expected_tasks})")
+    task_count = validate_task_count(payload.get("tasks"), max_compute_units, errors)
     traces = payload.get("traces")
     if not isinstance(traces, list) or not traces:
         errors.append("traces must be a non-empty list")
@@ -257,16 +254,111 @@ def external_baseline_artifact_errors(
     trace_items = cast(list[object], traces)
     if task_count and len(trace_items) != task_count:
         errors.append("traces length must equal tasks")
+    validate_trace_totals(
+        trace_items,
+        task_kind,
+        compute_units=compute_units,
+        solve_rate=solve_rate,
+        task_count=task_count,
+        errors=errors,
+    )
+    if expected_task_ids is not None:
+        validate_task_manifest(payload, trace_items, expected_task_ids, errors)
+    return tuple(errors)
+
+
+def validate_task_count(
+    tasks: object,
+    max_compute_units: float,
+    errors: list[str],
+) -> int:
+    """Validate artifact task count and return it when usable."""
+    expected_tasks = int(max_compute_units) if max_compute_units.is_integer() else None
+    if not isinstance(tasks, int) or isinstance(tasks, bool) or tasks <= 0:
+        errors.append("tasks must be a positive integer")
+        return 0
+    if expected_tasks is not None and tasks != expected_tasks:
+        errors.append(f"tasks must cover the full held-out split ({expected_tasks})")
+    return tasks
+
+
+def validate_trace_totals(
+    traces: list[object],
+    task_kind: str,
+    *,
+    compute_units: float,
+    solve_rate: float,
+    task_count: int,
+    errors: list[str],
+) -> None:
+    """Validate aggregate trace score fields against artifact totals."""
     trace_compute = 0.0
     trace_solved = 0
-    for index, trace in enumerate(trace_items, start=1):
+    for index, trace in enumerate(traces, start=1):
         trace_compute += trace_compute_units(trace, index, task_kind, errors)
         trace_solved += int(trace_passed(trace, task_kind))
     if abs(trace_compute - compute_units) > 1e-9:
         errors.append("trace compute_units must sum to compute_units")
     if task_count and abs((trace_solved / task_count) - solve_rate) > 1e-9:
         errors.append("trace solve rate must equal solve_rate")
-    return tuple(errors)
+
+
+def task_manifest(task_ids: tuple[str, ...]) -> dict[str, object]:
+    """Return the canonical external-baseline held-out task manifest."""
+    return {
+        "task_ids": task_ids,
+        "task_digest": task_manifest_digest(task_ids),
+    }
+
+
+def task_manifest_digest(task_ids: tuple[str, ...]) -> str:
+    """Return a stable digest for an ordered held-out task-id set."""
+    encoded = json.dumps(list(task_ids), separators=(",", ":")).encode()
+    return sha256(encoded).hexdigest()
+
+
+def validate_task_manifest(
+    payload: Mapping[str, object],
+    traces: list[object],
+    expected_task_ids: tuple[str, ...],
+    errors: list[str],
+) -> None:
+    """Validate external artifact binding to the exact held-out task set."""
+    trace_ids = tuple(trace_task_id(trace) for trace in traces)
+    if trace_ids != expected_task_ids:
+        errors.append("trace task_ids must match the expected held-out task set")
+    manifest = payload.get("task_manifest")
+    if not isinstance(manifest, Mapping):
+        errors.append("task_manifest must be an object")
+        return
+    manifest_map = cast(Mapping[str, object], manifest)
+    manifest_task_ids = string_sequence(manifest_map.get("task_ids"))
+    if manifest_task_ids is None:
+        errors.append("task_manifest.task_ids must be a string list")
+    elif manifest_task_ids != expected_task_ids:
+        errors.append("task_manifest.task_ids must match the expected held-out task set")
+    digest = manifest_map.get("task_digest")
+    if digest != task_manifest_digest(expected_task_ids):
+        errors.append("task_manifest.task_digest must match the expected held-out task set")
+
+
+def string_sequence(value: object) -> tuple[str, ...] | None:
+    """Return a tuple when value is a JSON string list."""
+    if not isinstance(value, list):
+        return None
+    items = cast(list[object], value)
+    if not all(isinstance(item, str) for item in items):
+        return None
+    return tuple(cast(list[str], items))
+
+
+def trace_task_id(trace: object) -> str | None:
+    """Return a trace task id when the trace shape permits it."""
+    if not isinstance(trace, Mapping):
+        return None
+    trace_map = cast(Mapping[str, object], trace)
+    task_id = trace_map.get("task_id")
+    return task_id if isinstance(task_id, str) else None
 
 
 def trace_passed(trace: object, task_kind: str) -> bool:
@@ -367,4 +459,6 @@ __all__ = [
     "evaluate_baseline_suite",
     "external_baseline",
     "external_baseline_errors",
+    "task_manifest",
+    "task_manifest_digest",
 ]

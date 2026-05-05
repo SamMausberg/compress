@@ -78,6 +78,7 @@ def evaluate_release_readiness(limit: int = 0) -> ReleaseReadinessReport:
         "VPM_HARD_LLM_BASELINE_JSON",
         max_compute_units=float(hard_domains.tasks),
         task_kind="hard",
+        expected_task_ids=tuple(trace.task_id for trace in hard_domains.traces),
     )
     red_team = RedTeamReport(
         failures=failure_modes,

@@ -14,6 +14,7 @@ from vpm.evaluation.baselines import (
     BaselineStatus,
     external_baseline_errors,
     optional_float,
+    task_manifest,
 )
 from vpm.tasks.hard_domains import HardDomain, HardDomainTask, hard_domain_curriculum
 
@@ -90,6 +91,11 @@ class HardLlmBaselineScore:
         return len(self.traces)
 
     @property
+    def task_ids(self) -> tuple[str, ...]:
+        """Ordered held-out hard-domain task ids covered by this score."""
+        return tuple(trace.task_id for trace in self.traces)
+
+    @property
     def solved(self) -> int:
         """Number of exact-answer hard-domain predictions."""
         return sum(trace.correct for trace in self.traces)
@@ -150,6 +156,7 @@ class HardLlmBaselineScore:
             "mean_candidates": 1.0 if self.tasks else 0.0,
             "compute_units": self.compute_units,
             "max_compute_units": self.max_compute_units,
+            "task_manifest": task_manifest(self.task_ids),
             "traces": [trace.to_dict() for trace in self.traces],
         }
 
