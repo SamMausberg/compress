@@ -44,6 +44,7 @@ class HardLlmBaselinePrediction:
     task_id: str
     answer: str | None
     compute_units: float | None
+    model: str | None
     raw_output: str = ""
 
 
@@ -57,6 +58,7 @@ class HardLlmBaselineTrace:
     predicted_answer: str | None
     correct: bool
     compute_units: float
+    model: str | None
     errors: tuple[str, ...]
 
     def to_dict(self) -> dict[str, object]:
@@ -68,6 +70,7 @@ class HardLlmBaselineTrace:
             "predicted_answer": self.predicted_answer,
             "correct": self.correct,
             "compute_units": self.compute_units,
+            "model": self.model,
             "errors": self.errors,
         }
 
@@ -268,11 +271,18 @@ def parse_hard_prediction(
     if not isinstance(raw_output, str):
         errors.append(f"line {line_number}: raw_output must be a string")
         raw_output = ""
+    model = payload.get("model")
+    if not isinstance(model, str) or not model.strip():
+        errors.append(f"line {line_number}: model must be a non-empty string")
+        model = None
+    else:
+        model = model.strip()
     return (
         HardLlmBaselinePrediction(
             task_id=task_id,
             answer=answer,
             compute_units=compute_units,
+            model=model,
             raw_output=raw_output,
         ),
         tuple(errors),
@@ -292,6 +302,7 @@ def score_hard_prediction(
             None,
             False,
             0.0,
+            None,
             ("missing prediction",),
         )
     errors: list[str] = []
@@ -303,6 +314,8 @@ def score_hard_prediction(
         errors.append("compute_units is required")
     elif prediction.compute_units < 0.0:
         errors.append("compute_units must be non-negative")
+    if prediction.model is None:
+        errors.append("model is required")
     return HardLlmBaselineTrace(
         task_id=task.task_id,
         domain=task.domain,
@@ -310,6 +323,7 @@ def score_hard_prediction(
         predicted_answer=answer,
         correct=normalize_hard_answer(answer) == normalize_hard_answer(task.expected),
         compute_units=compute_units,
+        model=prediction.model,
         errors=tuple(errors),
     )
 

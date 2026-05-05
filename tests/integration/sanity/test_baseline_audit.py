@@ -36,6 +36,7 @@ def external_llm_payload(
                 "certified": index < solved,
                 "operation_correct": index < solved,
                 "compute_units": compute_units / tasks,
+                "model": "external-test-model",
                 "errors": [],
             }
             for index in range(tasks)
@@ -50,6 +51,7 @@ def external_llm_payload(
                 "predicted_answer": "42" if index < solved else "wrong",
                 "correct": index < solved,
                 "compute_units": compute_units / tasks,
+                "model": "external-test-model",
                 "errors": [],
             }
             for index in range(tasks)
@@ -122,6 +124,30 @@ def test_compact_external_llm_summary_is_invalid(
     )
     assert baseline.status is BaselineStatus.INVALID
     assert "artifact_kind must be vpm-external-llm-baseline-v1" in baseline.reason
+
+
+def test_traced_external_llm_artifact_requires_model(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = external_llm_payload()
+    traces = payload["traces"]
+    assert isinstance(traces, list)
+    trace = traces[0]
+    assert isinstance(trace, dict)
+    del trace["model"]
+    report = tmp_path / "llm.json"
+    report.write_text(json.dumps(payload))
+    monkeypatch.setenv("VPM_LLM_BASELINE_JSON", str(report))
+
+    baseline = external_baseline(
+        BaselineFamily.LLM,
+        "VPM_LLM_BASELINE_JSON",
+        max_compute_units=1.0,
+        task_kind="c1",
+    )
+    assert baseline.status is BaselineStatus.INVALID
+    assert "model must be a string" in baseline.reason
 
 
 def test_over_budget_external_llm_baseline_is_invalid(

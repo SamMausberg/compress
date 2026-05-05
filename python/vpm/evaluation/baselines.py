@@ -306,10 +306,12 @@ def trace_compute_units(
     elif trace_errors:
         errors.append(f"trace {index}: errors must be empty")
     if task_kind == "c1":
+        require_string_trace_field(trace_map, index, "model", errors)
         require_bool_trace_field(trace_map, index, "certified", errors)
         require_bool_trace_field(trace_map, index, "operation_correct", errors)
         require_string_trace_field(trace_map, index, "expected_operation", errors)
     elif task_kind == "hard":
+        require_string_trace_field(trace_map, index, "model", errors)
         require_bool_trace_field(trace_map, index, "correct", errors)
         require_string_trace_field(trace_map, index, "expected_answer", errors)
         require_string_trace_field(trace_map, index, "domain", errors)

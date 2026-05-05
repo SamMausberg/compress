@@ -188,15 +188,15 @@ certified utility positive; all Criterion 1 failure clauses unfired.
 - Same-budget external LLM comparisons are accepted only through
   `VPM_LLM_BASELINE_JSON`; the JSON must be scorer-produced artifact format
   `vpm-external-llm-baseline-v1`, including `solve_rate`, `compute_units`,
-  task kind, full held-out task count, and per-task traces. `eval-baselines`
-  marks it invalid if the trace provenance is missing or the compute exceeds
-  the matched VPM budget.
+  task kind, full held-out task count, and per-task traces with model
+  provenance. `eval-baselines` marks it invalid if the trace provenance is
+  missing or the compute exceeds the matched VPM budget.
 - Use `vpm export-llm-baseline tasks.jsonl --limit N` to write the exact
   held-out C1 prompts for an external LLM run, then score JSONL predictions
   with `vpm score-llm-baseline predictions.jsonl --limit N --output
   llm-baseline.json`. The prediction JSONL must provide `task_id`,
-  `operation`, and `compute_units` per task; the exported prompts do not
-  include gold operations.
+  `operation`, `compute_units`, and `model` per task; the exported prompts do
+  not include gold operations.
 - To run those prompts through OpenAI reproducibly, set `OPENAI_API_KEY`
   and run `vpm run-openai-llm-baseline tasks.jsonl predictions.jsonl
   --kind c1 --model MODEL`. One Responses API call is logged as one compute
@@ -210,8 +210,8 @@ certified utility positive; all Criterion 1 failure clauses unfired.
 - For held-out hard domains, use `vpm export-hard-llm-baseline
   hard-tasks.jsonl`, then `vpm score-hard-llm-baseline
   hard-predictions.jsonl --output hard-llm-baseline.json`. The hard-domain
-  prediction JSONL must provide `task_id`, `answer`, and `compute_units`;
-  exported prompts include evidence but not gold answers. Set
+  prediction JSONL must provide `task_id`, `answer`, `compute_units`, and
+  `model`; exported prompts include evidence but not gold answers. Set
   `VPM_HARD_LLM_BASELINE_JSON` to the scored hard-domain baseline JSON when
   running `vpm eval-release`.
 - The same OpenAI runner accepts `--kind hard` for hard-domain task JSONL.

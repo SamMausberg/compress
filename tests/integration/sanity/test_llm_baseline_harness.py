@@ -43,6 +43,7 @@ def test_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> None:
                     "task_id": task.task_id,
                     "operation": task.operation,
                     "compute_units": 1.0,
+                    "model": "external-test-model",
                 },
                 sort_keys=True,
             )
@@ -59,14 +60,24 @@ def test_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> None:
     assert report.to_external_json()["compute_units"] == len(heldout)
     assert report.to_external_json()["artifact_kind"] == "vpm-external-llm-baseline-v1"
     assert report.to_external_json()["task_kind"] == "c1"
-    assert len(report.to_external_json()["traces"]) == len(heldout)
+    traces = report.to_external_json()["traces"]
+    assert isinstance(traces, list)
+    assert len(traces) == len(heldout)
+    assert all(trace["model"] == "external-test-model" for trace in traces)
 
 
 def test_llm_baseline_scoring_rejects_missing_compute_units(tmp_path) -> None:
     _train, heldout = schema_split(limit=0)
     predictions = tmp_path / "predictions.jsonl"
     predictions.write_text(
-        json.dumps({"task_id": heldout[0].task_id, "operation": heldout[0].operation}) + "\n"
+        json.dumps(
+            {
+                "task_id": heldout[0].task_id,
+                "operation": heldout[0].operation,
+                "model": "external-test-model",
+            }
+        )
+        + "\n"
     )
 
     report = score_llm_baseline_predictions(predictions, limit=0)
@@ -76,6 +87,30 @@ def test_llm_baseline_scoring_rejects_missing_compute_units(tmp_path) -> None:
     assert report.to_dict()["external_json"] is None
     with pytest.raises(ValueError, match="cannot export invalid"):
         report.to_external_json()
+
+
+def test_llm_baseline_scoring_rejects_missing_model(tmp_path) -> None:
+    _train, heldout = schema_split(limit=0)
+    predictions = tmp_path / "predictions.jsonl"
+    predictions.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "task_id": task.task_id,
+                    "operation": task.operation,
+                    "compute_units": 1.0,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+            for task in heldout
+        )
+    )
+
+    report = score_llm_baseline_predictions(predictions, limit=0)
+
+    assert report.status is BaselineStatus.INVALID
+    assert any("model must be a non-empty string" in error for error in report.errors)
 
 
 def test_cli_exports_and_scores_llm_baseline(tmp_path) -> None:
@@ -98,6 +133,7 @@ def test_cli_exports_and_scores_llm_baseline(tmp_path) -> None:
                     "task_id": task.task_id,
                     "operation": task.operation,
                     "compute_units": 1.0,
+                    "model": "external-test-model",
                 },
                 sort_keys=True,
             )
@@ -150,6 +186,7 @@ def test_hard_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> Non
                     "task_id": task.task_id,
                     "answer": task.expected,
                     "compute_units": 1.0,
+                    "model": "external-test-model",
                 },
                 sort_keys=True,
             )
@@ -165,7 +202,33 @@ def test_hard_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> Non
     assert report.to_external_json()["solve_rate"] == 1.0
     assert report.to_external_json()["artifact_kind"] == "vpm-external-llm-baseline-v1"
     assert report.to_external_json()["task_kind"] == "hard"
-    assert len(report.to_external_json()["traces"]) == len(hard_domain_curriculum())
+    traces = report.to_external_json()["traces"]
+    assert isinstance(traces, list)
+    assert len(traces) == len(hard_domain_curriculum())
+    assert all(trace["model"] == "external-test-model" for trace in traces)
+
+
+def test_hard_llm_baseline_scoring_rejects_missing_model(tmp_path) -> None:
+    predictions = tmp_path / "hard-predictions.jsonl"
+    predictions.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "task_id": task.task_id,
+                    "answer": task.expected,
+                    "compute_units": 1.0,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+            for task in hard_domain_curriculum()
+        )
+    )
+
+    report = score_hard_llm_baseline_predictions(predictions)
+
+    assert report.status is BaselineStatus.INVALID
+    assert any("model must be a non-empty string" in error for error in report.errors)
 
 
 def test_cli_exports_and_scores_hard_llm_baseline(tmp_path) -> None:
@@ -187,6 +250,7 @@ def test_cli_exports_and_scores_hard_llm_baseline(tmp_path) -> None:
                     "task_id": task.task_id,
                     "answer": task.expected,
                     "compute_units": 1.0,
+                    "model": "external-test-model",
                 },
                 sort_keys=True,
             )

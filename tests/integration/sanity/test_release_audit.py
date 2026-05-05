@@ -61,6 +61,7 @@ def test_release_readiness_accepts_configured_llm_baseline_artifacts(
                     "task_id": task.task_id,
                     "operation": task.operation,
                     "compute_units": 1.0,
+                    "model": "external-test-model",
                 },
                 sort_keys=True,
             )
@@ -75,6 +76,7 @@ def test_release_readiness_accepts_configured_llm_baseline_artifacts(
                     "task_id": task.task_id,
                     "answer": task.expected,
                     "compute_units": 1.0,
+                    "model": "external-test-model",
                 },
                 sort_keys=True,
             )
