@@ -11,6 +11,10 @@ from vpm.evaluation.external_components import (
     dirty_external_component_probe,
     evaluate_external_components,
 )
+from vpm.evaluation.open_domain import (
+    dirty_open_domain_collapse_probe,
+    evaluate_open_domain_ambiguity,
+)
 from vpm.retrieval.calibration import dirty_recall_shift_probe, evaluate_recall_shift
 from vpm.substrate import encode_task_graph
 from vpm.tasks.c0 import arithmetic_task
@@ -32,16 +36,14 @@ class FailureMode(StrEnum):
     HIDDEN_COMPUTE_BYPASS = "hidden_compute_bypass"
     EXTERNAL_LLM_DEPENDENCE = "external_llm_dependence"
     ENTAILMENT_FALSE_SUPPORT_BYPASS = "entailment_false_support_bypass"
+    OPEN_DOMAIN_AMBIGUITY_COLLAPSE = "open_domain_ambiguity_collapse"
     SAFETY_GATE_BYPASS = "safety_gate_bypass"
     DIALOGUE_GATE_BYPASS = "dialogue_gate_bypass"
     OPAQUE_MACRO_ADMISSION = "opaque_macro_admission"
     LINEAR_ACTIVE_MEMORY = "linear_active_memory"
 
 
-UNCOVERED_CRITERION1_CLAUSES = (
-    "same-budget external LLM baseline",
-    "open-domain context and semantic ambiguity collapse",
-)
+UNCOVERED_CRITERION1_CLAUSES = ("same-budget external LLM baseline",)
 
 
 @dataclass(frozen=True)
@@ -117,6 +119,8 @@ def evaluate_failure_modes() -> FailureModeReport:
     dirty_external_components = dirty_external_component_probe()
     entailment_attacks = evaluate_entailment_attacks()
     dirty_entailment_attacks = dirty_entailment_attack_probe()
+    open_domain = evaluate_open_domain_ambiguity()
+    dirty_open_domain = dirty_open_domain_collapse_probe()
     compute = evaluate_compute_accounting()
     hidden_compute = hidden_compute_probe()
     return FailureModeReport(
@@ -188,6 +192,15 @@ def evaluate_failure_modes() -> FailureModeReport:
                     f"false_support={len(entailment_attacks.false_support_attacks)} "
                     f"caught={len(entailment_attacks.caught_false_support)} "
                     f"dirty_passed={dirty_entailment_attacks.passed}"
+                ),
+            ),
+            FailureCheck(
+                FailureMode.OPEN_DOMAIN_AMBIGUITY_COLLAPSE,
+                not open_domain.passed or dirty_open_domain.passed,
+                (
+                    f"collapses={len(open_domain.collapses)} "
+                    f"failures={len(open_domain.failures)} "
+                    f"dirty_passed={dirty_open_domain.passed}"
                 ),
             ),
             FailureCheck(

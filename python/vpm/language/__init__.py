@@ -12,6 +12,8 @@ This package will hold:
   ``SemOK`` (eqs. 60–63).
 - ``vague.py``        — undefined-vague-predicate handling (eq. 59).
 - ``clarify.py``      — clarification policy ``q^*`` (eq. 64).
+- ``ambiguity.py``   — open-domain context/reference and semantic
+  ambiguity routing.
 - ``realization.py``  — independent round-trip realization checker
   ``ε_real``, ``RealOK`` (eqs. 75–77). The checker model is **disjoint**
   from the renderer.
@@ -28,6 +30,12 @@ influence safety, privacy, and no hidden certified-mode atom.
 from __future__ import annotations
 
 from dataclasses import dataclass
+
+from vpm.language.ambiguity import (
+    AmbiguityAction,
+    AmbiguityDecision,
+    guard_open_domain_prompt,
+)
 
 
 @dataclass(frozen=True)
@@ -83,4 +91,12 @@ def render_question(normal_form: NormalForm) -> str:
     return normal_form.ask or "Please clarify the task."
 
 
-__all__ = ["NormalForm", "normalize", "render_certified", "render_question"]
+__all__ = [
+    "AmbiguityAction",
+    "AmbiguityDecision",
+    "NormalForm",
+    "guard_open_domain_prompt",
+    "normalize",
+    "render_certified",
+    "render_question",
+]

@@ -22,6 +22,7 @@ from vpm.evaluation.compute_accounting import evaluate_compute_accounting
 from vpm.evaluation.external_components import evaluate_external_components
 from vpm.evaluation.failure_modes import evaluate_failure_modes
 from vpm.evaluation.hard_domains import evaluate_hard_domains
+from vpm.evaluation.open_domain import evaluate_open_domain_ambiguity
 from vpm.evaluation.phase_transition import evaluate_phase_transition
 from vpm.evaluation.red_team import red_team_replay
 from vpm.evaluation.saturation import evaluate_saturation
@@ -129,6 +130,7 @@ def register_meta_eval_commands(app: typer.Typer) -> None:
     """Register failure, ablation, and red-team evaluation commands."""
     register_failure_eval_commands(app)
     register_calibration_eval_commands(app)
+    register_language_guard_eval_commands(app)
     register_red_team_eval_commands(app)
 
 
@@ -197,6 +199,10 @@ def register_calibration_eval_commands(app: typer.Typer) -> None:
                 f"shifted_epsilon={report.shifted_epsilon:.3f}"
             )
 
+
+def register_language_guard_eval_commands(app: typer.Typer) -> None:
+    """Register language and external-component guard commands."""
+
     @app.command("eval-external-components")
     def eval_external_components_command(
         as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
@@ -225,6 +231,21 @@ def register_calibration_eval_commands(app: typer.Typer) -> None:
                 f"passed={report.passed} "
                 f"false_support={len(report.false_support_attacks)} "
                 f"caught={len(report.caught_false_support)}"
+            )
+
+    @app.command("eval-open-domain")
+    def eval_open_domain_command(
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Run open-domain context and semantic ambiguity checks."""
+        report = evaluate_open_domain_ambiguity()
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"passed={report.passed} "
+                f"collapses={len(report.collapses)} "
+                f"failures={len(report.failures)}"
             )
 
 

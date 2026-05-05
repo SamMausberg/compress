@@ -19,6 +19,8 @@ This package will hold:
   ``sup_m LCB^seq A(m) ≤ 0`` (eq. 136).
 - ``external_components.py`` — external LLM authority and hidden
   cognitive-component checks.
+- ``open_domain.py``   — open-domain context and semantic ambiguity
+  collapse checks.
 - ``report.py``          — pretty-prints the metric table and writes
   JSON for CI consumption.
 """
@@ -31,6 +33,7 @@ from vpm._reports import float_field, object_list, object_map
 from vpm.evaluation.compression import CompressionReplayReport, evaluate_c5
 from vpm.evaluation.dialogue import DialogueEvaluationReport, evaluate_c4
 from vpm.evaluation.external_components import ExternalComponentReport
+from vpm.evaluation.open_domain import OpenDomainAmbiguityReport
 from vpm.infer import InferenceResult, run_task, run_task_candidate
 from vpm.tasks.c0 import C0Task, curriculum
 from vpm.tasks.c1 import C1Task, hidden_schema_curriculum
@@ -290,6 +293,7 @@ __all__ = [
     "EvaluationReport",
     "EvidenceMetrics",
     "ExternalComponentReport",
+    "OpenDomainAmbiguityReport",
     "PolicyEvaluationReport",
     "PolicyGateTrace",
     "certificate",

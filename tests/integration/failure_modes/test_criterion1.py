@@ -30,3 +30,4 @@ def test_failure_report_serializes_scope_and_uncovered_clauses() -> None:
         "entailment false-support attacks outside controlled corpus"
         not in payload["uncovered_clauses"]
     )
+    assert "open-domain context and semantic ambiguity collapse" not in payload["uncovered_clauses"]
