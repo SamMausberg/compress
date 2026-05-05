@@ -97,8 +97,9 @@ def stage_spec() -> StageSpec:
             "replay-safe-macro-admission",
             "macro-demotion-replay",
             "frontier-movement-probe",
+            "online-frontier-estimator",
         ),
-        blockers=("online frontier estimator", "cross-stage replay scheduler"),
+        blockers=("cross-stage replay scheduler",),
     )
 
 

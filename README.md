@@ -183,6 +183,8 @@ The C5 executable subset adds replay-safe macro admission:
 the candidate-cost frontier under the sequence-valid empirical-Bernstein
 bound, satisfy the explicit active-memory admission rule, and keep active
 memory growth sublinear.
+The C5 replay path feeds each replay outcome through the online frontier
+estimator before applying the active-memory admission rule.
 The M5 training controls are executable scalar kernels rather than a full
 optimizer: split hygiene, certified teacher posterior filtering, loss
 accounting, weight balancing, block-coordinate scheduling, budget diagnostics,

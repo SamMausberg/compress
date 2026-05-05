@@ -133,6 +133,8 @@ produce the expected regressions.
 - `C4` dialogue probes expose calibrated uncertainty as a strict witness
   threshold: any missing source, rebuttal, entailment, or realization witness
   forces refusal.
+- `C5` macro replay feeds outcomes incrementally through the online frontier
+  estimator before active-memory admission.
 - Runtime metadata includes an explicit `M6` stage for red-team replay,
   ablations, hard-domain probes, and external-LLM task export. The release
   audit treats any `StageSpec.blockers` as release blockers.

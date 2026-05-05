@@ -41,7 +41,13 @@ from vpm.memory.admit import (
     demote_active,
 )
 from vpm.memory.archival import ArchivalMemory
-from vpm.memory.frontier import EmpiricalBernsteinBound, FrontierReport, replay_frontier_report
+from vpm.memory.frontier import (
+    EmpiricalBernsteinBound,
+    FrontierReport,
+    OnlineFrontierEstimator,
+    online_replay_frontier_report,
+    replay_frontier_report,
+)
 from vpm.memory.library import MemoryLibrary, witness_names
 
 __all__ = [
@@ -57,8 +63,10 @@ __all__ = [
     "FrontierReport",
     "MemoryCapsule",
     "MemoryLibrary",
+    "OnlineFrontierEstimator",
     "admit_active",
     "demote_active",
+    "online_replay_frontier_report",
     "replay_frontier_report",
     "select_active_set",
     "witness_names",

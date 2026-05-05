@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from vpm.infer import InferenceResult, run_task_candidate
 from vpm.memory import AdmissionDecision, AdmissionEvidence, FrontierReport, MemoryLibrary
 from vpm.memory.admit import admit_active
-from vpm.memory.frontier import replay_frontier_report
+from vpm.memory.frontier import online_replay_frontier_report, replay_frontier_report
 from vpm.substrate.prototype import OPERATIONS
 from vpm.tasks.c5 import C5MacroCandidate, macro_replay_curriculum
 from vpm.verifiers import gate_passed
@@ -136,10 +136,11 @@ def macro_replay_trace(candidate: C5MacroCandidate) -> MacroReplayTrace:
     results = tuple(
         run_task_candidate(task, candidate.operation) for task in candidate.replay_tasks
     )
-    certified = sum(gate_passed(result.native_report) for result in results)
-    frontier = replay_frontier_report(
-        certified,
-        len(results),
+    replay_outcomes = tuple(gate_passed(result.native_report) for result in results)
+    certified = sum(replay_outcomes)
+    frontier = online_replay_frontier_report(
+        replay_outcomes,
+        macro_key=candidate.macro_key,
         enumerative_utility=1.0 / len(OPERATIONS),
     )
     gate_violations = sum(gate_violation(result) for result in results)

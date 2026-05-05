@@ -8,10 +8,13 @@ from vpm.memory import (
     ActiveSetBudget,
     ActiveSetItem,
     AdmissionEvidence,
+    OnlineFrontierEstimator,
     admit_active,
+    online_replay_frontier_report,
     replay_frontier_report,
     select_active_set,
 )
+from vpm.tasks import stages
 
 pytestmark = pytest.mark.sanity
 
@@ -22,6 +25,32 @@ def test_exact_replay_frontier_uses_tight_sequence_bound() -> None:
     assert report.bound.lcb == 0.75
     assert report.positive_lcb is True
     assert report.to_dict()["bound"]["radius"] == 0.0
+
+
+def test_online_frontier_estimator_matches_exact_replay_report() -> None:
+    estimator = OnlineFrontierEstimator("macro:add", enumerative_utility=0.25)
+    for outcome in (True, True, True):
+        estimator = estimator.observe(outcome)
+    online = estimator.report()
+    direct = online_replay_frontier_report(
+        (True, True, True),
+        macro_key="macro:add",
+        enumerative_utility=0.25,
+    )
+
+    assert estimator.observations == 3
+    assert estimator.certified == 3
+    assert online.frontier_delta == 0.75
+    assert online.bound.lcb == 0.75
+    assert direct.to_dict() == online.to_dict()
+
+
+def test_c5_stage_metadata_marks_online_frontier_implemented() -> None:
+    c5 = next(spec for spec in stages() if spec.name == "C5")
+
+    assert "online-frontier-estimator" in c5.implemented_components
+    assert "online frontier estimator" not in c5.blockers
+    assert c5.blockers == ("cross-stage replay scheduler",)
 
 
 def test_active_admission_requires_frontier_replay_and_equivalence() -> None:
