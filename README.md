@@ -155,7 +155,9 @@ authority and componentwise-risk probes after proposal but before rendering or
 memory admission.
 The C1 executable subset adds hidden-schema tasks whose observations carry
 only typed operands plus expected values; evaluation bridges them back through
-the same native C0 executor/verifier/gate.
+the same native C0 executor/verifier/gate. It also includes typed multi-step
+synthesis probes that select verified two-step programs from candidate
+programs.
 `train-c1` trains the same non-transformer substrate on those hidden-schema
 splits and `eval-c1-prototype --json` reports the matched baselines,
 compression/frontier metrics, and verifier-gated traces.

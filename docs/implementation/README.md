@@ -134,6 +134,9 @@ produce the expected regressions.
   samples while bounded noisy observations remain in the audit trace.
 - `C2` multi-step planning probes emit bounded grid action/state traces and
   shortest-path certificates around blocked cells.
+- `C1` multi-step synthesis probes select typed two-step programs from
+  candidate programs and verify their final value against the hidden-schema
+  target.
 - `C4` dialogue probes expose calibrated uncertainty as a strict witness
   threshold: any missing source, rebuttal, entailment, or realization witness
   forces refusal.

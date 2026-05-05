@@ -46,7 +46,17 @@ from vpm.tasks.c0 import (
     typed_task,
 )
 from vpm.tasks.c0 import stage_spec as c0_stage
-from vpm.tasks.c1 import C1Task, as_c0_tasks, hidden_schema_curriculum, schema_split
+from vpm.tasks.c1 import (
+    C1Task,
+    MultiStepSynthesisTask,
+    MultiStepSynthesisTrace,
+    SynthesisStep,
+    as_c0_tasks,
+    hidden_schema_curriculum,
+    multi_step_synthesis_curriculum,
+    run_multistep_synthesis,
+    schema_split,
+)
 from vpm.tasks.c1 import stage_spec as c1_stage
 from vpm.tasks.c2 import (
     ActiveTestTrace,
@@ -129,6 +139,8 @@ __all__ = [
     "GridPlanningTask",
     "HardDomain",
     "HardDomainTask",
+    "MultiStepSynthesisTask",
+    "MultiStepSynthesisTrace",
     "NoisyCausalWorld",
     "PlanningTrace",
     "RiskChannel",
@@ -136,6 +148,7 @@ __all__ = [
     "RollbackLedgerReport",
     "RollbackPlan",
     "StageSpec",
+    "SynthesisStep",
     "ToolInvocation",
     "ToolSandboxReport",
     "ToolSandboxTrace",
@@ -156,11 +169,13 @@ __all__ = [
     "hidden_task",
     "identify_causal_world",
     "macro_replay_curriculum",
+    "multi_step_synthesis_curriculum",
     "multiplication_task",
     "plan_grid_task",
     "planning_curriculum",
     "policy_probe_curriculum",
     "rollback_curriculum",
+    "run_multistep_synthesis",
     "run_rollback_ledger",
     "run_tool_invocation",
     "run_tool_sandbox_suite",
