@@ -23,10 +23,13 @@ from vpm.tasks.c2 import (
     ActiveTestTrace,
     C2Task,
     CausalWorldTrace,
+    PlanningTrace,
     active_curriculum,
     active_test,
     causal_world_curriculum,
     identify_causal_world,
+    plan_grid_task,
+    planning_curriculum,
 )
 
 
@@ -42,6 +45,7 @@ class ActiveEvaluationReport:
     halt_decisions: tuple[HaltDecision, ...]
     stage_schedules: tuple[StageScheduleTrace, ...]
     causal_traces: tuple[CausalWorldTrace, ...]
+    planning_traces: tuple[PlanningTrace, ...]
 
     @property
     def solve_rate(self) -> float:
@@ -104,6 +108,18 @@ class ActiveEvaluationReport:
         reduced = sum(trace.support_reduced for trace in self.causal_traces)
         return reduced / len(self.causal_traces) if self.causal_traces else 0.0
 
+    @property
+    def planning_pass_rate(self) -> float:
+        """Fraction of multi-step planning probes solved."""
+        passed = sum(trace.passed for trace in self.planning_traces)
+        return passed / len(self.planning_traces) if self.planning_traces else 0.0
+
+    @property
+    def multi_step_plan_rate(self) -> float:
+        """Fraction of planning probes whose solution uses multiple actions."""
+        multi_step = sum(trace.multi_step for trace in self.planning_traces)
+        return multi_step / len(self.planning_traces) if self.planning_traces else 0.0
+
     def to_dict(self) -> dict[str, object]:
         """JSON-friendly active-test report."""
         return {
@@ -117,6 +133,8 @@ class ActiveEvaluationReport:
             "program_entry_rate": self.program_entry_rate,
             "causal_pass_rate": self.causal_pass_rate,
             "causal_support_reduction_rate": self.causal_support_reduction_rate,
+            "planning_pass_rate": self.planning_pass_rate,
+            "multi_step_plan_rate": self.multi_step_plan_rate,
             "mean_candidates_before": self.mean_candidates_before,
             "mean_candidates_after": self.mean_candidates_after,
             "verifier": self.verifier.to_dict(),
@@ -126,6 +144,7 @@ class ActiveEvaluationReport:
             "halt_decisions": [decision.to_dict() for decision in self.halt_decisions],
             "stage_schedules": [schedule.to_dict() for schedule in self.stage_schedules],
             "causal_traces": [trace.to_dict() for trace in self.causal_traces],
+            "planning_traces": [trace.to_dict() for trace in self.planning_traces],
         }
 
 
@@ -141,6 +160,7 @@ def evaluate_c2(
     halt_decisions = halt_traces(support_guards, test_selections)
     stage_schedules = stage_schedule_traces(traces, support_guards, test_selections)
     causal_traces = tuple(identify_causal_world(world) for world in causal_world_curriculum())
+    planning_traces = tuple(plan_grid_task(task) for task in planning_curriculum())
     results = [
         run_task_candidate(task.to_c0_task(trace.selected_operation), trace.selected_operation)
         for task, trace, guard, decision in zip(
@@ -161,6 +181,7 @@ def evaluate_c2(
         halt_decisions=halt_decisions,
         stage_schedules=stage_schedules,
         causal_traces=causal_traces,
+        planning_traces=planning_traces,
     )
 
 

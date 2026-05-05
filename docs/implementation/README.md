@@ -132,6 +132,8 @@ produce the expected regressions.
   certificates.
 - `C2` noisy causal-world probes estimate intervention effects from clean
   samples while bounded noisy observations remain in the audit trace.
+- `C2` multi-step planning probes emit bounded grid action/state traces and
+  shortest-path certificates around blocked cells.
 - `C4` dialogue probes expose calibrated uncertainty as a strict witness
   threshold: any missing source, rebuttal, entailment, or realization witness
   forces refusal.

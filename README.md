@@ -168,6 +168,8 @@ decision, `iota -> sigma -> pi` stage-scheduler trace, any rehydrated
 candidates, and then routes accepted selected operations through the same
 verifier gate. It also reports noisy causal-world intervention traces that
 reduce relation support under a calibrated noise threshold.
+The C2 report includes bounded multi-step grid plans with explicit action
+and state traces, blocked-cell avoidance, and shortest-path certificates.
 The C3 executable subset adds adversarial authority/risk probes:
 `eval-c3 --json` checks that exactly verified actions are still rejected
 when labels or componentwise risk exceed the contract, and runs an

@@ -20,6 +20,8 @@ from vpm.tasks import (
     active_test,
     causal_world_curriculum,
     identify_causal_world,
+    plan_grid_task,
+    planning_curriculum,
     stages,
 )
 
@@ -46,12 +48,15 @@ def test_c2_active_tests_reduce_support_and_certify() -> None:
     assert metrics.program_entry_rate == 1.0
     assert metrics.causal_pass_rate == 1.0
     assert metrics.causal_support_reduction_rate == 1.0
+    assert metrics.planning_pass_rate == 1.0
+    assert metrics.multi_step_plan_rate == 1.0
     assert metrics.mean_candidates_after == 1.0
     assert metrics.to_dict()["support_guards"][0]["passed"] is True
     assert metrics.to_dict()["test_selections"][0]["selected"]["name"] == "active-reveal-expected"
     assert metrics.to_dict()["halt_decisions"][0]["reason"] == "contract_met"
     assert metrics.to_dict()["stage_schedules"][0]["final_stage"] == "pi"
     assert metrics.to_dict()["causal_traces"][0]["passed"] is True
+    assert metrics.to_dict()["planning_traces"][0]["passed"] is True
     assert metrics.to_dict()["verifier"]["evidence"]["source_coverage_rate"] == 1.0
 
 
@@ -71,7 +76,26 @@ def test_c2_stage_metadata_marks_noisy_causal_worlds_implemented() -> None:
 
     assert "noisy-causal-worlds" in c2.implemented_components
     assert "noisy causal worlds" not in c2.blockers
-    assert c2.blockers == ("multi-step planning",)
+    assert c2.blockers == ()
+
+
+def test_c2_multi_step_planner_finds_verifiable_paths() -> None:
+    traces = tuple(plan_grid_task(task) for task in planning_curriculum())
+
+    assert len(traces) == 2
+    assert all(trace.passed for trace in traces)
+    assert all(trace.multi_step for trace in traces)
+    assert traces[0].actions == ("down", "right", "right")
+    assert traces[0].states[-1] == (2, 1)
+    assert traces[1].plan_length == 5
+
+
+def test_c2_stage_metadata_marks_multi_step_planning_implemented() -> None:
+    c2 = next(spec for spec in stages() if spec.name == "C2")
+
+    assert "multi-step-planning" in c2.implemented_components
+    assert "multi-step planning" not in c2.blockers
+    assert c2.blockers == ()
 
 
 def test_test_selection_and_halt_rule_choose_high_value_actions() -> None:
