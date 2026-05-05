@@ -166,7 +166,8 @@ The C2 executable subset adds active tests for partial observations:
 the calibrated support-guard decision, uncertainty-action score, halt/EVC
 decision, `iota -> sigma -> pi` stage-scheduler trace, any rehydrated
 candidates, and then routes accepted selected operations through the same
-verifier gate.
+verifier gate. It also reports noisy causal-world intervention traces that
+reduce relation support under a calibrated noise threshold.
 The C3 executable subset adds adversarial authority/risk probes:
 `eval-c3 --json` checks that exactly verified actions are still rejected
 when labels or componentwise risk exceed the contract, and runs an

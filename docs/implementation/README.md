@@ -130,6 +130,8 @@ produce the expected regressions.
 - `C3` rollback probes maintain a cumulative risk ledger and apply rollback
   credits only when they are within cap and backed by monitor/restoration
   certificates.
+- `C2` noisy causal-world probes estimate intervention effects from clean
+  samples while bounded noisy observations remain in the audit trace.
 - `C4` dialogue probes expose calibrated uncertainty as a strict witness
   threshold: any missing source, rebuttal, entailment, or realization witness
   forces refusal.

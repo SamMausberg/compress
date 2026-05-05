@@ -48,7 +48,17 @@ from vpm.tasks.c0 import (
 from vpm.tasks.c0 import stage_spec as c0_stage
 from vpm.tasks.c1 import C1Task, as_c0_tasks, hidden_schema_curriculum, schema_split
 from vpm.tasks.c1 import stage_spec as c1_stage
-from vpm.tasks.c2 import ActiveTestTrace, C2Task, active_curriculum, active_test
+from vpm.tasks.c2 import (
+    ActiveTestTrace,
+    C2Task,
+    CausalObservation,
+    CausalWorldTrace,
+    NoisyCausalWorld,
+    active_curriculum,
+    active_test,
+    causal_world_curriculum,
+    identify_causal_world,
+)
 from vpm.tasks.c2 import stage_spec as c2_stage
 from vpm.tasks.c3 import (
     C3PolicyProbe,
@@ -105,11 +115,14 @@ __all__ = [
     "C3PolicyProbe",
     "C4DialogueTask",
     "C5MacroCandidate",
+    "CausalObservation",
+    "CausalWorldTrace",
     "CrossStageReplayBatch",
     "CrossStageReplayPlan",
     "CrossStageReplayTask",
     "HardDomain",
     "HardDomainTask",
+    "NoisyCausalWorld",
     "RiskChannel",
     "RollbackAction",
     "RollbackLedgerReport",
@@ -123,6 +136,7 @@ __all__ = [
     "addition_task",
     "arithmetic_task",
     "as_c0_tasks",
+    "causal_world_curriculum",
     "concat_task",
     "cross_stage_replay_plan",
     "curriculum",
@@ -132,6 +146,7 @@ __all__ = [
     "hard_domain_curriculum",
     "hidden_schema_curriculum",
     "hidden_task",
+    "identify_causal_world",
     "macro_replay_curriculum",
     "multiplication_task",
     "policy_probe_curriculum",

@@ -15,7 +15,13 @@ from vpm.infer import (
 )
 from vpm.infer.support_guard import guard_support
 from vpm.infer.test_select import TestAction as ActiveTestAction
-from vpm.tasks import active_curriculum, active_test
+from vpm.tasks import (
+    active_curriculum,
+    active_test,
+    causal_world_curriculum,
+    identify_causal_world,
+    stages,
+)
 
 pytestmark = pytest.mark.sanity
 
@@ -38,12 +44,34 @@ def test_c2_active_tests_reduce_support_and_certify() -> None:
     assert metrics.mean_test_score > 0.0
     assert metrics.halt_rate == 1.0
     assert metrics.program_entry_rate == 1.0
+    assert metrics.causal_pass_rate == 1.0
+    assert metrics.causal_support_reduction_rate == 1.0
     assert metrics.mean_candidates_after == 1.0
     assert metrics.to_dict()["support_guards"][0]["passed"] is True
     assert metrics.to_dict()["test_selections"][0]["selected"]["name"] == "active-reveal-expected"
     assert metrics.to_dict()["halt_decisions"][0]["reason"] == "contract_met"
     assert metrics.to_dict()["stage_schedules"][0]["final_stage"] == "pi"
+    assert metrics.to_dict()["causal_traces"][0]["passed"] is True
     assert metrics.to_dict()["verifier"]["evidence"]["source_coverage_rate"] == 1.0
+
+
+def test_c2_noisy_causal_worlds_reduce_relation_support() -> None:
+    traces = tuple(identify_causal_world(world) for world in causal_world_curriculum())
+
+    assert len(traces) == 2
+    assert all(trace.passed for trace in traces)
+    assert all(trace.support_reduced for trace in traces)
+    assert traces[0].selected_relation == "treatment_causes_outcome"
+    assert traces[0].noise_rate == 0.25
+    assert traces[1].selected_relation == "independent"
+
+
+def test_c2_stage_metadata_marks_noisy_causal_worlds_implemented() -> None:
+    c2 = next(spec for spec in stages() if spec.name == "C2")
+
+    assert "noisy-causal-worlds" in c2.implemented_components
+    assert "noisy causal worlds" not in c2.blockers
+    assert c2.blockers == ("multi-step planning",)
 
 
 def test_test_selection_and_halt_rule_choose_high_value_actions() -> None:

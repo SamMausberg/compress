@@ -19,7 +19,15 @@ from vpm.infer import (
     select_test,
     support_reduction_action,
 )
-from vpm.tasks.c2 import ActiveTestTrace, C2Task, active_curriculum, active_test
+from vpm.tasks.c2 import (
+    ActiveTestTrace,
+    C2Task,
+    CausalWorldTrace,
+    active_curriculum,
+    active_test,
+    causal_world_curriculum,
+    identify_causal_world,
+)
 
 
 @dataclass(frozen=True)
@@ -33,6 +41,7 @@ class ActiveEvaluationReport:
     test_selections: tuple[TestSelectionTrace, ...]
     halt_decisions: tuple[HaltDecision, ...]
     stage_schedules: tuple[StageScheduleTrace, ...]
+    causal_traces: tuple[CausalWorldTrace, ...]
 
     @property
     def solve_rate(self) -> float:
@@ -83,6 +92,18 @@ class ActiveEvaluationReport:
         reached = sum(schedule.reached(InferenceStage.PROGRAM) for schedule in self.stage_schedules)
         return reached / len(self.stage_schedules) if self.stage_schedules else 0.0
 
+    @property
+    def causal_pass_rate(self) -> float:
+        """Fraction of noisy causal worlds identified correctly."""
+        passed = sum(trace.passed for trace in self.causal_traces)
+        return passed / len(self.causal_traces) if self.causal_traces else 0.0
+
+    @property
+    def causal_support_reduction_rate(self) -> float:
+        """Fraction of causal worlds whose relation support was narrowed."""
+        reduced = sum(trace.support_reduced for trace in self.causal_traces)
+        return reduced / len(self.causal_traces) if self.causal_traces else 0.0
+
     def to_dict(self) -> dict[str, object]:
         """JSON-friendly active-test report."""
         return {
@@ -94,6 +115,8 @@ class ActiveEvaluationReport:
             "mean_test_score": self.mean_test_score,
             "halt_rate": self.halt_rate,
             "program_entry_rate": self.program_entry_rate,
+            "causal_pass_rate": self.causal_pass_rate,
+            "causal_support_reduction_rate": self.causal_support_reduction_rate,
             "mean_candidates_before": self.mean_candidates_before,
             "mean_candidates_after": self.mean_candidates_after,
             "verifier": self.verifier.to_dict(),
@@ -102,6 +125,7 @@ class ActiveEvaluationReport:
             "test_selections": [selection.to_dict() for selection in self.test_selections],
             "halt_decisions": [decision.to_dict() for decision in self.halt_decisions],
             "stage_schedules": [schedule.to_dict() for schedule in self.stage_schedules],
+            "causal_traces": [trace.to_dict() for trace in self.causal_traces],
         }
 
 
@@ -116,6 +140,7 @@ def evaluate_c2(
     test_selections = test_selection_traces(traces, support_guards)
     halt_decisions = halt_traces(support_guards, test_selections)
     stage_schedules = stage_schedule_traces(traces, support_guards, test_selections)
+    causal_traces = tuple(identify_causal_world(world) for world in causal_world_curriculum())
     results = [
         run_task_candidate(task.to_c0_task(trace.selected_operation), trace.selected_operation)
         for task, trace, guard, decision in zip(
@@ -135,6 +160,7 @@ def evaluate_c2(
         test_selections=test_selections,
         halt_decisions=halt_decisions,
         stage_schedules=stage_schedules,
+        causal_traces=causal_traces,
     )
 
 
