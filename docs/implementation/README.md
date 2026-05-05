@@ -160,6 +160,12 @@ certified utility positive; all Criterion 1 failure clauses unfired.
   `VPM_LLM_BASELINE_JSON`; the JSON must include `solve_rate` and
   `compute_units`, and `eval-baselines` marks it invalid if the compute
   exceeds the matched VPM budget.
+- Use `vpm export-llm-baseline tasks.jsonl --limit N` to write the exact
+  held-out C1 prompts for an external LLM run, then score JSONL predictions
+  with `vpm score-llm-baseline predictions.jsonl --limit N --output
+  llm-baseline.json`. The prediction JSONL must provide `task_id`,
+  `operation`, and `compute_units` per task; the exported prompts do not
+  include gold operations.
 
 ## Known risks
 

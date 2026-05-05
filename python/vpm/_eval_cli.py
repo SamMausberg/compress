@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import typer
 
@@ -17,11 +18,15 @@ from vpm.evaluation import (
     evaluate_c5,
 )
 from vpm.evaluation.ablations import evaluate_ablations
-from vpm.evaluation.baselines import evaluate_baseline_suite
+from vpm.evaluation.baselines import BaselineStatus, evaluate_baseline_suite
 from vpm.evaluation.compute_accounting import evaluate_compute_accounting
 from vpm.evaluation.external_components import evaluate_external_components
 from vpm.evaluation.failure_modes import evaluate_failure_modes
 from vpm.evaluation.hard_domains import evaluate_hard_domains
+from vpm.evaluation.llm_baseline import (
+    score_llm_baseline_predictions,
+    write_llm_baseline_tasks,
+)
 from vpm.evaluation.open_domain import evaluate_open_domain_ambiguity
 from vpm.evaluation.phase_transition import evaluate_phase_transition
 from vpm.evaluation.red_team import red_team_replay
@@ -29,6 +34,14 @@ from vpm.evaluation.saturation import evaluate_saturation
 from vpm.retrieval.calibration import evaluate_recall_shift
 from vpm.verifiers.dependence import evaluate_dependence_shift
 from vpm.verifiers.entailment import evaluate_entailment_attacks
+
+LLM_BASELINE_TASK_OUTPUT = typer.Argument(..., help="JSONL task file to write.")
+LLM_BASELINE_PREDICTIONS = typer.Argument(..., help="JSONL prediction file to score.")
+LLM_BASELINE_SCORE_OUTPUT = typer.Option(
+    None,
+    "--output",
+    help="Optional JSON file to write for VPM_LLM_BASELINE_JSON.",
+)
 
 
 def register_eval_commands(app: typer.Typer) -> None:
@@ -271,6 +284,7 @@ def register_red_team_eval_commands(app: typer.Typer) -> None:
 
 def register_audit_eval_commands(app: typer.Typer) -> None:
     """Register baseline, phase, hard-domain, and compute audit commands."""
+    register_llm_baseline_eval_commands(app)
 
     @app.command("eval-baselines")
     def eval_baselines_command(
@@ -335,6 +349,44 @@ def register_audit_eval_commands(app: typer.Typer) -> None:
                 f"passed={report.passed} "
                 f"total_units={report.total_units:.3f} "
                 f"budget={report.budget:.3f}"
+            )
+
+
+def register_llm_baseline_eval_commands(app: typer.Typer) -> None:
+    """Register external LLM baseline export and scoring commands."""
+
+    @app.command("export-llm-baseline")
+    def export_llm_baseline_command(
+        output: Path = LLM_BASELINE_TASK_OUTPUT,
+        limit: int = typer.Option(2, help="Absolute integer limit used for C1 splits."),
+    ) -> None:
+        """Export held-out C1 prompts for a same-budget external LLM baseline."""
+        tasks = write_llm_baseline_tasks(output, limit=limit)
+        typer.echo(f"wrote={tasks} path={output}")
+
+    @app.command("score-llm-baseline")
+    def score_llm_baseline_command(
+        predictions: Path = LLM_BASELINE_PREDICTIONS,
+        limit: int = typer.Option(2, help="Absolute integer limit used for C1 splits."),
+        output: Path | None = LLM_BASELINE_SCORE_OUTPUT,
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Score external LLM operation predictions against held-out C1 tasks."""
+        report = score_llm_baseline_predictions(predictions, limit=limit)
+        if output is not None:
+            if report.status is not BaselineStatus.EXECUTED:
+                raise typer.BadParameter(
+                    "refusing to write VPM_LLM_BASELINE_JSON for invalid score"
+                )
+            output.write_text(json.dumps(report.to_external_json(), indent=2, sort_keys=True))
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"status={report.status.value} "
+                f"solve_rate={report.solve_rate:.3f} "
+                f"compute_units={report.compute_units:.3f} "
+                f"max_compute_units={report.max_compute_units:.3f}"
             )
 
 
