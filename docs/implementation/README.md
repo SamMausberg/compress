@@ -137,6 +137,8 @@ produce the expected regressions.
 - `C1` multi-step synthesis probes select typed two-step programs from
   candidate programs and verify their final value against the hidden-schema
   target.
+- `C1` theorem fragments forward-chain compact propositional implications
+  with explicit modus-ponens proof traces.
 - `C4` dialogue probes expose calibrated uncertainty as a strict witness
   threshold: any missing source, rebuttal, entailment, or realization witness
   forces refusal.

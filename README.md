@@ -157,7 +157,8 @@ The C1 executable subset adds hidden-schema tasks whose observations carry
 only typed operands plus expected values; evaluation bridges them back through
 the same native C0 executor/verifier/gate. It also includes typed multi-step
 synthesis probes that select verified two-step programs from candidate
-programs.
+programs, plus propositional theorem fragments with checked modus-ponens
+proof traces.
 `train-c1` trains the same non-transformer substrate on those hidden-schema
 splits and `eval-c1-prototype --json` reports the matched baselines,
 compression/frontier metrics, and verifier-gated traces.
