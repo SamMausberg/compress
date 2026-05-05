@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,6 +38,7 @@ class OpenAIReleaseBaselineArtifacts:
     hard_tasks: Path
     hard_predictions: Path
     hard_baseline_json: Path
+    env_file: Path
     c1_score: LlmBaselineScore
     hard_score: HardLlmBaselineScore
 
@@ -47,6 +49,12 @@ class OpenAIReleaseBaselineArtifacts:
             f"VPM_LLM_BASELINE_JSON={self.c1_baseline_json}",
             f"VPM_HARD_LLM_BASELINE_JSON={self.hard_baseline_json}",
         )
+
+    @property
+    def env_export_lines(self) -> tuple[str, str]:
+        """Shell-ready export lines required by the release audit."""
+        c1_assignment, hard_assignment = quoted_env_assignments(self.env_exports)
+        return (f"export {c1_assignment}", f"export {hard_assignment}")
 
     @property
     def passed(self) -> bool:
@@ -74,6 +82,8 @@ class OpenAIReleaseBaselineArtifacts:
                 "baseline_json": str(self.hard_baseline_json),
                 "score": self.hard_score.to_dict(),
             },
+            "env_file": str(self.env_file),
+            "env_export_lines": self.env_export_lines,
         }
 
 
@@ -92,6 +102,7 @@ def run_openai_release_baselines(
     hard_tasks = output_dir / "hard-llm-tasks.jsonl"
     hard_predictions = output_dir / "hard-llm-predictions.jsonl"
     hard_baseline_json = output_dir / "hard-llm-baseline.json"
+    env_file = output_dir / "release-baselines.env"
 
     write_llm_baseline_tasks(c1_tasks, limit=c1_limit)
     write_hard_llm_baseline_tasks(hard_tasks)
@@ -114,7 +125,7 @@ def run_openai_release_baselines(
     hard_score = score_hard_llm_baseline_predictions(hard_predictions)
     write_valid_baseline_json(c1_baseline_json, c1_score.to_external_json())
     write_valid_baseline_json(hard_baseline_json, hard_score.to_external_json())
-    return OpenAIReleaseBaselineArtifacts(
+    artifacts = OpenAIReleaseBaselineArtifacts(
         output_dir=output_dir,
         c1_tasks=c1_tasks,
         c1_predictions=c1_predictions,
@@ -122,14 +133,31 @@ def run_openai_release_baselines(
         hard_tasks=hard_tasks,
         hard_predictions=hard_predictions,
         hard_baseline_json=hard_baseline_json,
+        env_file=env_file,
         c1_score=c1_score,
         hard_score=hard_score,
     )
+    write_env_file(artifacts.env_file, artifacts.env_export_lines)
+    return artifacts
 
 
 def write_valid_baseline_json(path: Path, payload: Mapping[str, object]) -> None:
     """Write a release-audit baseline JSON with stable formatting."""
     path.write_text(json.dumps(dict(payload), indent=2, sort_keys=True))
+
+
+def quoted_env_assignments(assignments: tuple[str, ...]) -> tuple[str, ...]:
+    """Return shell-safe ``NAME=value`` assignments."""
+    quoted: list[str] = []
+    for assignment in assignments:
+        name, value = assignment.split("=", maxsplit=1)
+        quoted.append(f"{name}={shlex.quote(value)}")
+    return tuple(quoted)
+
+
+def write_env_file(path: Path, export_lines: tuple[str, ...]) -> None:
+    """Write shell exports for produced release-baseline artifacts."""
+    path.write_text("".join(f"{line}\n" for line in export_lines))
 
 
 __all__ = [

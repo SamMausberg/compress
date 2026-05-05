@@ -169,11 +169,12 @@ def register_llm_baseline_eval_commands(app: typer.Typer) -> None:
                         f"c1_solve_rate={artifacts.c1_score.solve_rate:.3f}",
                         f"hard_solve_rate={artifacts.hard_score.solve_rate:.3f}",
                         f"output_dir={artifacts.output_dir}",
+                        f"env_file={artifacts.env_file}",
                     )
                 )
             )
-            for export in artifacts.env_exports:
-                typer.echo(f"export {export}")
+            for export in artifacts.env_export_lines:
+                typer.echo(export)
 
 
 def register_hard_llm_baseline_eval_commands(app: typer.Typer) -> None:
