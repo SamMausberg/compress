@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from vpm.evaluation.release_audit import evaluate_release_readiness
@@ -37,3 +39,22 @@ def test_release_readiness_reports_external_llm_baseline_blocker(
         criterion["criterion_id"] == "hard_domain_llm_baseline" and not criterion["passed"]
         for criterion in payload["criteria"]
     )
+
+
+def test_release_readiness_accepts_configured_llm_baseline_artifacts(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    c1 = tmp_path / "llm.json"
+    hard = tmp_path / "hard-llm.json"
+    c1.write_text(json.dumps({"name": "external-llm-c1", "solve_rate": 0.0, "compute_units": 1.0}))
+    hard.write_text(
+        json.dumps({"name": "external-llm-hard", "solve_rate": 0.0, "compute_units": 1.0})
+    )
+    monkeypatch.setenv("VPM_LLM_BASELINE_JSON", str(c1))
+    monkeypatch.setenv("VPM_HARD_LLM_BASELINE_JSON", str(hard))
+
+    report = evaluate_release_readiness(limit=0)
+
+    assert report.passed is True
+    assert report.blockers == ()

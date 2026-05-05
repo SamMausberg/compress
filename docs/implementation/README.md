@@ -200,6 +200,11 @@ certified utility positive; all Criterion 1 failure clauses unfired.
   --kind c1 --model MODEL`. One Responses API call is logged as one compute
   unit, so the scorer still enforces the matched budget before writing
   reusable baseline JSON.
+- To produce both release-audit LLM artifacts in one run, use
+  `vpm run-openai-release-baselines artifacts/openai-baselines --model
+  MODEL`; it exports C1 and hard-domain tasks, runs the OpenAI-compatible
+  baseline, scores both outputs, writes both JSON files, and prints the
+  `export VPM_LLM_BASELINE_JSON=...` lines needed by `eval-release`.
 - For held-out hard domains, use `vpm export-hard-llm-baseline
   hard-tasks.jsonl`, then `vpm score-hard-llm-baseline
   hard-predictions.jsonl --output hard-llm-baseline.json`. The hard-domain

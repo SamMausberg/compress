@@ -8,7 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from vpm.evaluation.llm_baseline import read_hard_llm_predictions, read_llm_predictions
+from vpm.evaluation.llm_baseline import (
+    read_hard_llm_predictions,
+    read_llm_predictions,
+    run_openai_release_baselines,
+)
 from vpm.providers.openai_baseline import (
     LlmTaskKind,
     OpenAILlmConfig,
@@ -109,6 +113,43 @@ def test_response_text_collects_nested_response_output() -> None:
     }
 
     assert response_text(response) == '{"operation":"mul"}'
+
+
+def test_openai_release_runner_writes_scored_baseline_jsons(tmp_path: Path) -> None:
+    def fake_responder(
+        payload: Mapping[str, object],
+        _config: OpenAILlmConfig,
+    ) -> Mapping[str, object]:
+        text = payload.get("text")
+        assert isinstance(text, dict)
+        response_format = text["format"]
+        assert isinstance(response_format, dict)
+        schema = response_format["schema"]
+        assert isinstance(schema, dict)
+        properties = schema["properties"]
+        assert isinstance(properties, dict)
+        if "operation" in properties:
+            operation_schema = properties["operation"]
+            assert isinstance(operation_schema, dict)
+            allowed = operation_schema["enum"]
+            assert isinstance(allowed, list)
+            return {"id": "resp_c1", "output_text": json.dumps({"operation": allowed[0]})}
+        return {"id": "resp_hard", "output_text": json.dumps({"answer": "wrong"})}
+
+    artifacts = run_openai_release_baselines(
+        tmp_path,
+        config=OpenAILlmConfig(model="gpt-test", api_key="test-key"),
+        c1_limit=0,
+        responder=fake_responder,
+    )
+
+    assert artifacts.passed is True
+    assert artifacts.c1_baseline_json.exists()
+    assert artifacts.hard_baseline_json.exists()
+    assert artifacts.env_exports == (
+        f"VPM_LLM_BASELINE_JSON={artifacts.c1_baseline_json}",
+        f"VPM_HARD_LLM_BASELINE_JSON={artifacts.hard_baseline_json}",
+    )
 
 
 def test_openai_config_requires_api_key(monkeypatch: pytest.MonkeyPatch) -> None:

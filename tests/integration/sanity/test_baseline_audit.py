@@ -76,6 +76,23 @@ def test_over_budget_external_llm_baseline_is_invalid(
     assert "exceeds matched budget" in baseline.reason
 
 
+def test_zero_compute_external_llm_baseline_is_invalid(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    report = tmp_path / "llm.json"
+    report.write_text(json.dumps({"solve_rate": 0.0, "compute_units": 0.0}))
+    monkeypatch.setenv("VPM_LLM_BASELINE_JSON", str(report))
+
+    baseline = external_baseline(
+        BaselineFamily.LLM,
+        "VPM_LLM_BASELINE_JSON",
+        max_compute_units=1.0,
+    )
+    assert baseline.status is BaselineStatus.INVALID
+    assert "compute_units must be positive" in baseline.reason
+
+
 def test_cli_runs_baseline_audit(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("VPM_LLM_BASELINE_JSON", raising=False)
     completed = subprocess.run(

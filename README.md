@@ -215,7 +215,9 @@ release blockers rather than evidence of completion.
 program-synthesis, local transformer, and local SSM baselines run on the
 same C1 split. LLM baselines remain external and are reported as
 `not_configured` unless a JSON report is provided through
-`VPM_LLM_BASELINE_JSON`.
+`VPM_LLM_BASELINE_JSON`. `run-openai-release-baselines` can produce both
+the C1 and held-out hard-domain LLM baseline JSON artifacts in one audited
+run when an OpenAI-compatible API key and model are configured.
 `eval-phase --json` reports the C5 compression phase transition and
 saturation diagnostic over frontier lower-confidence bounds.
 `eval-hard-domains --json` runs the held-out M6 probe suite across

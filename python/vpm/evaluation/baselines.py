@@ -197,8 +197,8 @@ def external_baseline_errors(
     errors: list[str] = []
     if solve_rate < 0.0 or solve_rate > 1.0:
         errors.append("solve_rate must be in [0, 1]")
-    if compute_units < 0.0:
-        errors.append("compute_units must be non-negative")
+    if compute_units <= 0.0 and max_compute_units > 0.0:
+        errors.append("compute_units must be positive for non-empty matched baselines")
     if compute_units > max_compute_units:
         errors.append(
             f"compute_units {compute_units:.3f} exceeds matched budget {max_compute_units:.3f}"

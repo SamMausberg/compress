@@ -14,6 +14,7 @@ from vpm.evaluation.llm_baseline import (
     LlmTaskKind,
     openai_config_from_env,
     run_openai_llm_predictions,
+    run_openai_release_baselines,
     score_hard_llm_baseline_predictions,
     score_llm_baseline_predictions,
     write_hard_llm_baseline_tasks,
@@ -58,6 +59,10 @@ OPENAI_BASELINE_TIMEOUT = typer.Option(60.0, help="Per-request timeout.")
 OPENAI_BASELINE_REASONING_EFFORT = typer.Option(
     None,
     help="Optional Responses API reasoning.effort value.",
+)
+OPENAI_RELEASE_BASELINE_OUTPUT_DIR = typer.Argument(
+    ...,
+    help="Directory for exported tasks, predictions, and scored baseline JSON files.",
 )
 
 
@@ -124,6 +129,51 @@ def register_llm_baseline_eval_commands(app: typer.Typer) -> None:
             raise typer.BadParameter(str(exc)) from exc
         written = run_openai_llm_predictions(tasks, predictions, kind=kind, config=config)
         typer.echo(f"wrote={written} path={predictions} kind={kind.value} model={model}")
+
+    @app.command("run-openai-release-baselines")
+    def run_openai_release_baselines_command(
+        output_dir: Path = OPENAI_RELEASE_BASELINE_OUTPUT_DIR,
+        limit: int = typer.Option(2, help="Absolute integer limit used for C1 splits."),
+        model: str | None = OPENAI_BASELINE_MODEL,
+        api_key_env: str = OPENAI_BASELINE_API_KEY_ENV,
+        base_url: str = OPENAI_BASELINE_BASE_URL,
+        timeout_seconds: float = OPENAI_BASELINE_TIMEOUT,
+        reasoning_effort: str | None = OPENAI_BASELINE_REASONING_EFFORT,
+        as_json: bool = typer.Option(False, "--json", help="Print artifact report as JSON."),
+    ) -> None:
+        """Run and score both OpenAI release LLM baselines."""
+        if model is None:
+            raise typer.BadParameter("--model or VPM_OPENAI_BASELINE_MODEL is required")
+        try:
+            config = openai_config_from_env(
+                model=model,
+                api_key_env=api_key_env,
+                base_url=base_url,
+                timeout_seconds=timeout_seconds,
+                reasoning_effort=reasoning_effort,
+            )
+            artifacts = run_openai_release_baselines(
+                output_dir,
+                config=config,
+                c1_limit=limit,
+            )
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc)) from exc
+        if as_json:
+            typer.echo(json.dumps(artifacts.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                " ".join(
+                    (
+                        f"status={'executed' if artifacts.passed else 'invalid'}",
+                        f"c1_solve_rate={artifacts.c1_score.solve_rate:.3f}",
+                        f"hard_solve_rate={artifacts.hard_score.solve_rate:.3f}",
+                        f"output_dir={artifacts.output_dir}",
+                    )
+                )
+            )
+            for export in artifacts.env_exports:
+                typer.echo(f"export {export}")
 
 
 def register_hard_llm_baseline_eval_commands(app: typer.Typer) -> None:

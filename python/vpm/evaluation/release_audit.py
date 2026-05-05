@@ -86,7 +86,7 @@ def evaluate_release_readiness(limit: int = 0) -> ReleaseReadinessReport:
     return ReleaseReadinessReport(
         (
             stage_criterion(),
-            failure_mode_criterion(failure_modes),
+            failure_mode_criterion(failure_modes, baselines, hard_llm),
             red_team_criterion(red_team),
             hard_domain_criterion(hard_domains),
             baseline_criterion(baselines),
@@ -123,9 +123,14 @@ def stage_criterion() -> ReleaseCriterion:
     )
 
 
-def failure_mode_criterion(report: FailureModeReport) -> ReleaseCriterion:
+def failure_mode_criterion(
+    report: FailureModeReport,
+    baselines: BaselineSuite | None = None,
+    hard_llm: BaselineAudit | None = None,
+) -> ReleaseCriterion:
     """Audit Criterion-1 executable failure modes and uncovered clauses."""
-    blockers = tuple(report.uncovered_clauses) + tuple(
+    uncovered = covered_uncovered_clauses(report, baselines, hard_llm)
+    blockers = uncovered + tuple(
         f"triggered failure: {failure.mode.value}" for failure in report.failures
     )
     return ReleaseCriterion(
@@ -135,10 +140,39 @@ def failure_mode_criterion(report: FailureModeReport) -> ReleaseCriterion:
         evidence=(
             f"checks={len(report.checks)}",
             f"failures={len(report.failures)}",
-            f"uncovered={len(report.uncovered_clauses)}",
+            f"uncovered={len(uncovered)}",
         ),
         blockers=blockers,
     )
+
+
+def covered_uncovered_clauses(
+    report: FailureModeReport,
+    baselines: BaselineSuite | None,
+    hard_llm: BaselineAudit | None,
+) -> tuple[str, ...]:
+    """Drop clauses that are covered by executed audited baseline artifacts."""
+    if not llm_baselines_executed(baselines, hard_llm):
+        return tuple(report.uncovered_clauses)
+    return tuple(
+        clause
+        for clause in report.uncovered_clauses
+        if clause != "same-budget external LLM baseline"
+    )
+
+
+def llm_baselines_executed(
+    baselines: BaselineSuite | None,
+    hard_llm: BaselineAudit | None,
+) -> bool:
+    """True when both C1 and hard-domain LLM baselines are executed."""
+    if baselines is None or hard_llm is None:
+        return False
+    c1_llm_executed = any(
+        baseline.family is BaselineFamily.LLM and baseline.status is BaselineStatus.EXECUTED
+        for baseline in baselines.baselines
+    )
+    return c1_llm_executed and hard_llm.status is BaselineStatus.EXECUTED
 
 
 def red_team_criterion(report: RedTeamReport) -> ReleaseCriterion:
