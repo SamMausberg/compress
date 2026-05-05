@@ -39,6 +39,7 @@ def external_llm_payload(
                 "operation_correct": index < solved,
                 "compute_units": compute_units / tasks,
                 "model": "external-test-model",
+                "raw_output": "external raw output",
                 "errors": [],
             }
             for index in range(tasks)
@@ -55,6 +56,7 @@ def external_llm_payload(
                 "correct": index < solved,
                 "compute_units": compute_units / tasks,
                 "model": "external-test-model",
+                "raw_output": "external raw output",
                 "errors": [],
             }
             for index in range(tasks)
@@ -154,7 +156,32 @@ def test_traced_external_llm_artifact_requires_model(
         expected_task_ids=("c1-0",),
     )
     assert baseline.status is BaselineStatus.INVALID
-    assert "model must be a string" in baseline.reason
+    assert "model must be a non-empty string" in baseline.reason
+
+
+def test_traced_external_llm_artifact_requires_raw_output(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = external_llm_payload()
+    traces = payload["traces"]
+    assert isinstance(traces, list)
+    trace = traces[0]
+    assert isinstance(trace, dict)
+    del trace["raw_output"]
+    report = tmp_path / "llm.json"
+    report.write_text(json.dumps(payload))
+    monkeypatch.setenv("VPM_LLM_BASELINE_JSON", str(report))
+
+    baseline = external_baseline(
+        BaselineFamily.LLM,
+        "VPM_LLM_BASELINE_JSON",
+        max_compute_units=1.0,
+        task_kind="c1",
+        expected_task_ids=("c1-0",),
+    )
+    assert baseline.status is BaselineStatus.INVALID
+    assert "raw_output must be a non-empty string" in baseline.reason
 
 
 def test_traced_external_llm_artifact_requires_expected_task_set(

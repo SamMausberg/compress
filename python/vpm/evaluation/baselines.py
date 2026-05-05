@@ -399,11 +399,13 @@ def trace_compute_units(
         errors.append(f"trace {index}: errors must be empty")
     if task_kind == "c1":
         require_string_trace_field(trace_map, index, "model", errors)
+        require_string_trace_field(trace_map, index, "raw_output", errors)
         require_bool_trace_field(trace_map, index, "certified", errors)
         require_bool_trace_field(trace_map, index, "operation_correct", errors)
         require_string_trace_field(trace_map, index, "expected_operation", errors)
     elif task_kind == "hard":
         require_string_trace_field(trace_map, index, "model", errors)
+        require_string_trace_field(trace_map, index, "raw_output", errors)
         require_bool_trace_field(trace_map, index, "correct", errors)
         require_string_trace_field(trace_map, index, "expected_answer", errors)
         require_string_trace_field(trace_map, index, "domain", errors)
@@ -427,9 +429,10 @@ def require_string_trace_field(
     field: str,
     errors: list[str],
 ) -> None:
-    """Record an error when a trace string field is missing or malformed."""
-    if not isinstance(trace.get(field), str):
-        errors.append(f"trace {index}: {field} must be a string")
+    """Record an error when a trace string field is missing, empty, or malformed."""
+    value = trace.get(field)
+    if not isinstance(value, str) or not value.strip():
+        errors.append(f"trace {index}: {field} must be a non-empty string")
 
 
 def required_float(payload: Mapping[str, object], field: str) -> float:

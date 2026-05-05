@@ -44,6 +44,7 @@ def test_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> None:
                     "operation": task.operation,
                     "compute_units": 1.0,
                     "model": "external-test-model",
+                    "raw_output": "external raw output",
                 },
                 sort_keys=True,
             )
@@ -67,6 +68,7 @@ def test_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> None:
     assert isinstance(traces, list)
     assert len(traces) == len(heldout)
     assert all(trace["model"] == "external-test-model" for trace in traces)
+    assert all(trace["raw_output"] == "external raw output" for trace in traces)
 
 
 def test_llm_baseline_scoring_rejects_missing_compute_units(tmp_path) -> None:
@@ -78,6 +80,7 @@ def test_llm_baseline_scoring_rejects_missing_compute_units(tmp_path) -> None:
                 "task_id": heldout[0].task_id,
                 "operation": heldout[0].operation,
                 "model": "external-test-model",
+                "raw_output": "external raw output",
             }
         )
         + "\n"
@@ -102,6 +105,7 @@ def test_llm_baseline_scoring_rejects_missing_model(tmp_path) -> None:
                     "task_id": task.task_id,
                     "operation": task.operation,
                     "compute_units": 1.0,
+                    "raw_output": "external raw output",
                 },
                 sort_keys=True,
             )
@@ -114,6 +118,31 @@ def test_llm_baseline_scoring_rejects_missing_model(tmp_path) -> None:
 
     assert report.status is BaselineStatus.INVALID
     assert any("model must be a non-empty string" in error for error in report.errors)
+
+
+def test_llm_baseline_scoring_rejects_missing_raw_output(tmp_path) -> None:
+    _train, heldout = schema_split(limit=0)
+    predictions = tmp_path / "predictions.jsonl"
+    predictions.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "task_id": task.task_id,
+                    "operation": task.operation,
+                    "compute_units": 1.0,
+                    "model": "external-test-model",
+                },
+                sort_keys=True,
+            )
+            + "\n"
+            for task in heldout
+        )
+    )
+
+    report = score_llm_baseline_predictions(predictions, limit=0)
+
+    assert report.status is BaselineStatus.INVALID
+    assert any("raw_output must be a non-empty string" in error for error in report.errors)
 
 
 def test_cli_exports_and_scores_llm_baseline(tmp_path) -> None:
@@ -137,6 +166,7 @@ def test_cli_exports_and_scores_llm_baseline(tmp_path) -> None:
                     "operation": task.operation,
                     "compute_units": 1.0,
                     "model": "external-test-model",
+                    "raw_output": "external raw output",
                 },
                 sort_keys=True,
             )
@@ -191,6 +221,7 @@ def test_hard_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> Non
                     "answer": task.expected,
                     "compute_units": 1.0,
                     "model": "external-test-model",
+                    "raw_output": "external raw output",
                 },
                 sort_keys=True,
             )
@@ -213,6 +244,7 @@ def test_hard_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> Non
     assert isinstance(traces, list)
     assert len(traces) == len(hard_domain_curriculum())
     assert all(trace["model"] == "external-test-model" for trace in traces)
+    assert all(trace["raw_output"] == "external raw output" for trace in traces)
 
 
 def test_hard_llm_baseline_scoring_rejects_missing_model(tmp_path) -> None:
@@ -224,6 +256,7 @@ def test_hard_llm_baseline_scoring_rejects_missing_model(tmp_path) -> None:
                     "task_id": task.task_id,
                     "answer": task.expected,
                     "compute_units": 1.0,
+                    "raw_output": "external raw output",
                 },
                 sort_keys=True,
             )
@@ -236,6 +269,30 @@ def test_hard_llm_baseline_scoring_rejects_missing_model(tmp_path) -> None:
 
     assert report.status is BaselineStatus.INVALID
     assert any("model must be a non-empty string" in error for error in report.errors)
+
+
+def test_hard_llm_baseline_scoring_rejects_missing_raw_output(tmp_path) -> None:
+    predictions = tmp_path / "hard-predictions.jsonl"
+    predictions.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "task_id": task.task_id,
+                    "answer": task.expected,
+                    "compute_units": 1.0,
+                    "model": "external-test-model",
+                },
+                sort_keys=True,
+            )
+            + "\n"
+            for task in hard_domain_curriculum()
+        )
+    )
+
+    report = score_hard_llm_baseline_predictions(predictions)
+
+    assert report.status is BaselineStatus.INVALID
+    assert any("raw_output must be a non-empty string" in error for error in report.errors)
 
 
 def test_cli_exports_and_scores_hard_llm_baseline(tmp_path) -> None:
@@ -258,6 +315,7 @@ def test_cli_exports_and_scores_hard_llm_baseline(tmp_path) -> None:
                     "answer": task.expected,
                     "compute_units": 1.0,
                     "model": "external-test-model",
+                    "raw_output": "external raw output",
                 },
                 sort_keys=True,
             )

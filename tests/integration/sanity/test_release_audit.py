@@ -62,6 +62,7 @@ def test_release_readiness_accepts_configured_llm_baseline_artifacts(
                     "operation": task.operation,
                     "compute_units": 1.0,
                     "model": "external-test-model",
+                    "raw_output": "external raw output",
                 },
                 sort_keys=True,
             )
@@ -77,6 +78,7 @@ def test_release_readiness_accepts_configured_llm_baseline_artifacts(
                     "answer": task.expected,
                     "compute_units": 1.0,
                     "model": "external-test-model",
+                    "raw_output": "external raw output",
                 },
                 sort_keys=True,
             )

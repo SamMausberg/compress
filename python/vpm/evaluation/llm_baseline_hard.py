@@ -60,6 +60,7 @@ class HardLlmBaselineTrace:
     correct: bool
     compute_units: float
     model: str | None
+    raw_output: str | None
     errors: tuple[str, ...]
 
     def to_dict(self) -> dict[str, object]:
@@ -72,6 +73,7 @@ class HardLlmBaselineTrace:
             "correct": self.correct,
             "compute_units": self.compute_units,
             "model": self.model,
+            "raw_output": self.raw_output,
             "errors": self.errors,
         }
 
@@ -274,9 +276,9 @@ def parse_hard_prediction(
         compute_units = None
     if compute_units is None:
         errors.append(f"line {line_number}: compute_units is required")
-    raw_output = payload.get("raw_output", "")
-    if not isinstance(raw_output, str):
-        errors.append(f"line {line_number}: raw_output must be a string")
+    raw_output = payload.get("raw_output")
+    if not isinstance(raw_output, str) or not raw_output.strip():
+        errors.append(f"line {line_number}: raw_output must be a non-empty string")
         raw_output = ""
     model = payload.get("model")
     if not isinstance(model, str) or not model.strip():
@@ -310,6 +312,7 @@ def score_hard_prediction(
             False,
             0.0,
             None,
+            None,
             ("missing prediction",),
         )
     errors: list[str] = []
@@ -331,6 +334,7 @@ def score_hard_prediction(
         correct=normalize_hard_answer(answer) == normalize_hard_answer(task.expected),
         compute_units=compute_units,
         model=prediction.model,
+        raw_output=prediction.raw_output,
         errors=tuple(errors),
     )
 
