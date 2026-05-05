@@ -9,6 +9,7 @@ from vpm.evaluation.open_domain import (
     evaluate_open_domain_ambiguity,
 )
 from vpm.language.ambiguity import AmbiguityAction, guard_open_domain_prompt
+from vpm.retrieval import retrieve_open_domain_prompt
 
 pytestmark = pytest.mark.sanity
 
@@ -27,6 +28,11 @@ def test_open_domain_ambiguity_narrows_or_abstains() -> None:
     audited = guard_open_domain_prompt("audited:capital(france)=Paris")
     assert audited.action is AmbiguityAction.CERTIFY
     assert audited.certified_atoms == ("capital(france)",)
+
+    retrieved = retrieve_open_domain_prompt("audited:capital(france)=Paris")
+    assert retrieved.action is AmbiguityAction.CERTIFY
+    assert retrieved.retrieved is True
+    assert retrieved.sources == ("audit:geo:france:capital=Paris",)
 
 
 def test_dirty_open_domain_collapse_probe_is_rejected() -> None:

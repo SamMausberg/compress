@@ -178,6 +178,9 @@ The C4 executable subset adds controlled source-grounded dialogue:
 `eval-c4 --json` renders only answers with source, rebuttal, entailment, and
 round-trip realization witnesses; contradicted or uncertain answers are
 refused by the calibrated uncertainty gate.
+The default C4 dialogue probes are built through the audited open-domain
+retriever, which certifies only unique corpus matches and leaves ambiguous
+prompts uncertified.
 The C5 executable subset adds replay-safe macro admission:
 `eval-c5 --json` admits only macros that certify every replay task, improve
 the candidate-cost frontier under the sequence-valid empirical-Bernstein

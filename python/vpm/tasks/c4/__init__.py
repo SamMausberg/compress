@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from vpm.retrieval import retrieve_open_domain_prompt
 from vpm.tasks.spec import StageSpec
 from vpm.verifiers.entailment import entails_atom
 
@@ -77,30 +78,44 @@ class DialogueGateTrace:
 
 def dialogue_curriculum() -> list[C4DialogueTask]:
     """Build a small audited controlled-dialogue curriculum."""
+    prompts = (
+        ("c4-capital-france", "What is the capital of France?"),
+        ("c4-symbol-water", "What is the chemical formula for water?"),
+        (
+            "c4-contradicted-sky",
+            "In the audited toy corpus, what color is the daytime clear sky?",
+        ),
+    )
     return [
-        C4DialogueTask(
-            task_id="c4-capital-france",
-            question="What is the capital of France?",
-            atom="capital(france)",
-            answer="Paris",
-            sources=("audit:geo:france:capital=Paris",),
-        ),
-        C4DialogueTask(
-            task_id="c4-symbol-water",
-            question="What is the chemical formula for water?",
-            atom="formula(water)",
-            answer="H2O",
-            sources=("audit:chem:water:formula=H2O",),
-        ),
-        C4DialogueTask(
-            task_id="c4-contradicted-sky",
-            question="What color is the daytime clear sky in this toy corpus?",
-            atom="color(clear_day_sky)",
-            answer="blue",
-            sources=("audit:toy:sky:color=blue",),
-            rebuttals=("audit:toy:sky:defeater=color=green",),
-        ),
+        task
+        for task_id, prompt in prompts
+        if (task := open_domain_dialogue_task(prompt, task_id=task_id)) is not None
     ]
+
+
+def open_domain_dialogue_task(
+    prompt: str,
+    *,
+    task_id: str | None = None,
+) -> C4DialogueTask | None:
+    """Build a C4 dialogue task from an audited open-domain retrieval result."""
+    retrieval = retrieve_open_domain_prompt(prompt)
+    document = retrieval.document
+    if (
+        not retrieval.retrieved
+        or document is None
+        or retrieval.atom is None
+        or retrieval.answer is None
+    ):
+        return None
+    return C4DialogueTask(
+        task_id=task_id or f"c4-open-domain-{document.doc_id}",
+        question=prompt,
+        atom=retrieval.atom,
+        answer=retrieval.answer,
+        sources=retrieval.sources,
+        rebuttals=retrieval.rebuttals,
+    )
 
 
 def gate_dialogue(task: C4DialogueTask, *, uncertainty_threshold: float = 0.0) -> DialogueGateTrace:
@@ -204,8 +219,9 @@ def stage_spec() -> StageSpec:
             "round-trip-checker",
             "dialogue-renderer",
             "calibrated-uncertainty-gate",
+            "open-domain-retrieval",
         ),
-        blockers=("open-domain retrieval",),
+        blockers=(),
     )
 
 
@@ -215,6 +231,7 @@ __all__ = [
     "dialogue_curriculum",
     "dialogue_uncertainty",
     "gate_dialogue",
+    "open_domain_dialogue_task",
     "recover_answer",
     "render_dialogue_answer",
     "stage_spec",

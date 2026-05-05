@@ -133,6 +133,9 @@ produce the expected regressions.
 - `C4` dialogue probes expose calibrated uncertainty as a strict witness
   threshold: any missing source, rebuttal, entailment, or realization witness
   forces refusal.
+- `C4` default dialogue probes are fed by the audited open-domain retriever,
+  which certifies only unique corpus matches and routes unresolved prompts
+  away from certified mode.
 - `C5` macro replay feeds outcomes incrementally through the online frontier
   estimator before active-memory admission.
 - `C5` macro replay uses a cross-stage scheduler that combines the candidate
