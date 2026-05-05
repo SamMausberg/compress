@@ -15,6 +15,7 @@ from vpm.memory import (
     select_active_set,
 )
 from vpm.tasks import stages
+from vpm.tasks.c5 import cross_stage_replay_plan, macro_replay_curriculum
 
 pytestmark = pytest.mark.sanity
 
@@ -45,12 +46,35 @@ def test_online_frontier_estimator_matches_exact_replay_report() -> None:
     assert direct.to_dict() == online.to_dict()
 
 
-def test_c5_stage_metadata_marks_online_frontier_implemented() -> None:
+def test_c5_stage_metadata_marks_replay_components_implemented() -> None:
     c5 = next(spec for spec in stages() if spec.name == "C5")
 
     assert "online-frontier-estimator" in c5.implemented_components
+    assert "cross-stage-replay-scheduler" in c5.implemented_components
     assert "online frontier estimator" not in c5.blockers
-    assert c5.blockers == ("cross-stage replay scheduler",)
+    assert "cross-stage replay scheduler" not in c5.blockers
+    assert c5.blockers == ()
+
+
+def test_cross_stage_replay_scheduler_expands_macro_scope() -> None:
+    candidate = macro_replay_curriculum()[0]
+    plan = cross_stage_replay_plan(candidate, per_stage_limit=1)
+
+    assert plan.implementation_operation == "add"
+    assert plan.target_operation == "add"
+    assert plan.cross_stage_covered is True
+    assert {"C0", "C1", "C2", "C3"}.issubset(set(plan.curriculum_stages))
+    assert plan.scheduled_tasks[0].stage == "C5-seed"
+
+
+def test_cross_stage_replay_scheduler_uses_seed_target_scope() -> None:
+    candidate = macro_replay_curriculum()[-1]
+    plan = cross_stage_replay_plan(candidate, per_stage_limit=1)
+
+    assert plan.implementation_operation == "add"
+    assert plan.target_operation == "mul"
+    assert plan.cross_stage_covered is True
+    assert {"C0", "C1", "C2"}.issubset(set(plan.curriculum_stages))
 
 
 def test_active_admission_requires_frontier_replay_and_equivalence() -> None:

@@ -185,6 +185,9 @@ bound, satisfy the explicit active-memory admission rule, and keep active
 memory growth sublinear.
 The C5 replay path feeds each replay outcome through the online frontier
 estimator before applying the active-memory admission rule.
+Replay is scheduled across the candidate seed set and verifier-backed
+C0/C1/C2/C3 batches for the same target operation, including C3 gate
+outcomes that are expected to reject adversarial policy probes.
 The M5 training controls are executable scalar kernels rather than a full
 optimizer: split hygiene, certified teacher posterior filtering, loss
 accounting, weight balancing, block-coordinate scheduling, budget diagnostics,

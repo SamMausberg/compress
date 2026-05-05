@@ -69,7 +69,14 @@ from vpm.tasks.c3 import (
 from vpm.tasks.c3 import stage_spec as c3_stage
 from vpm.tasks.c4 import C4DialogueTask, dialogue_curriculum, gate_dialogue
 from vpm.tasks.c4 import stage_spec as c4_stage
-from vpm.tasks.c5 import C5MacroCandidate, macro_replay_curriculum
+from vpm.tasks.c5 import (
+    C5MacroCandidate,
+    CrossStageReplayBatch,
+    CrossStageReplayPlan,
+    CrossStageReplayTask,
+    cross_stage_replay_plan,
+    macro_replay_curriculum,
+)
 from vpm.tasks.c5 import stage_spec as c5_stage
 from vpm.tasks.hard_domains import HardDomain, HardDomainTask, hard_domain_curriculum
 from vpm.tasks.hard_domains import stage_spec as m6_stage
@@ -98,6 +105,9 @@ __all__ = [
     "C3PolicyProbe",
     "C4DialogueTask",
     "C5MacroCandidate",
+    "CrossStageReplayBatch",
+    "CrossStageReplayPlan",
+    "CrossStageReplayTask",
     "HardDomain",
     "HardDomainTask",
     "RiskChannel",
@@ -114,6 +124,7 @@ __all__ = [
     "arithmetic_task",
     "as_c0_tasks",
     "concat_task",
+    "cross_stage_replay_plan",
     "curriculum",
     "dialogue_curriculum",
     "equality_task",

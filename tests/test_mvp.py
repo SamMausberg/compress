@@ -202,7 +202,9 @@ def test_c5_macro_replay_admits_only_safe_compressive_macros() -> None:
     assert metrics.demoted == 1
     assert metrics.violations == 0
     assert metrics.frontier_movement_rate == 0.75
+    assert metrics.cross_stage_coverage_rate == 1.0
     assert all(trace.sublinear_active_memory for trace in metrics.traces if trace.admitted)
+    assert all(trace.cross_stage_covered for trace in metrics.traces)
 
     rejected = [trace for trace in metrics.traces if not trace.expected_admitted]
     assert rejected[0].admitted is False
@@ -321,6 +323,7 @@ def test_cli_runs_c5_macro_replay_evaluation() -> None:
     payload = json.loads(completed.stdout)
     assert payload["admitted"] == 3
     assert payload["demoted"] == 1
+    assert payload["cross_stage_coverage_rate"] == 1.0
     assert payload["violation_rate"] == 0.0
 
 

@@ -135,6 +135,9 @@ produce the expected regressions.
   forces refusal.
 - `C5` macro replay feeds outcomes incrementally through the online frontier
   estimator before active-memory admission.
+- `C5` macro replay uses a cross-stage scheduler that combines the candidate
+  seed set with verifier-backed C0/C1/C2/C3 replay batches for the target
+  operation, including expected C3 policy rejections.
 - Runtime metadata includes an explicit `M6` stage for red-team replay,
   ablations, hard-domain probes, and external-LLM task export. The release
   audit treats any `StageSpec.blockers` as release blockers.
