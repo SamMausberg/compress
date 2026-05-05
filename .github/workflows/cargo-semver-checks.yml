@@ -23,6 +23,8 @@ jobs:
   check:
     name: cargo-semver-checks
     runs-on: ubuntu-24.04
+    env:
+      PYO3_NO_PYTHON: "1"
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable

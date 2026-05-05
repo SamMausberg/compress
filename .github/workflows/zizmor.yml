@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Run zizmor
-        uses: zizmorcore/zizmor-action@v0
+        uses: zizmorcore/zizmor-action@v0.5.3
         with:
           # Surface persona-aware findings; `auditor` is the strictest.
           persona: auditor

@@ -33,6 +33,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: cargo check (workspace)
+        env:
+          PYO3_NO_PYTHON: "1"
         run: cargo check --workspace --locked --all-targets
 
       - uses: astral-sh/setup-uv@v8.1.0

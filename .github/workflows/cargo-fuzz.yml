@@ -39,6 +39,8 @@ jobs:
     name: cargo fuzz run ${{ github.event.inputs.target || 'smoke' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    env:
+      PYO3_NO_PYTHON: "1"
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
