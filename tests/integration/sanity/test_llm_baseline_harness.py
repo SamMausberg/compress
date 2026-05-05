@@ -10,10 +10,13 @@ import pytest
 
 from vpm.evaluation.baselines import BaselineStatus
 from vpm.evaluation.llm_baseline import (
+    score_hard_llm_baseline_predictions,
     score_llm_baseline_predictions,
+    write_hard_llm_baseline_tasks,
     write_llm_baseline_tasks,
 )
 from vpm.tasks.c1 import schema_split
+from vpm.tasks.hard_domains import hard_domain_curriculum
 
 pytestmark = pytest.mark.sanity
 
@@ -108,6 +111,87 @@ def test_cli_exports_and_scores_llm_baseline(tmp_path) -> None:
             str(predictions),
             "--limit",
             "0",
+            "--output",
+            str(scored),
+            "--json",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(completed.stdout)
+    assert payload["status"] == "executed"
+    assert json.loads(scored.read_text())["solve_rate"] == 1.0
+
+
+def test_hard_llm_baseline_export_omits_gold_answers(tmp_path) -> None:
+    output = tmp_path / "hard-tasks.jsonl"
+    written = write_hard_llm_baseline_tasks(output)
+    lines = [json.loads(line) for line in output.read_text().splitlines()]
+
+    assert written == len(hard_domain_curriculum())
+    assert all("expected" not in line for line in lines)
+    assert all("evidence" in line for line in lines)
+    assert all("prompt" in line for line in lines)
+
+
+def test_hard_llm_baseline_scoring_produces_valid_external_json(tmp_path) -> None:
+    predictions = tmp_path / "hard-predictions.jsonl"
+    predictions.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "task_id": task.task_id,
+                    "answer": task.expected,
+                    "compute_units": 1.0,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+            for task in hard_domain_curriculum()
+        )
+    )
+
+    report = score_hard_llm_baseline_predictions(predictions)
+    assert report.status is BaselineStatus.EXECUTED
+    assert report.solve_rate == 1.0
+    assert report.compute_units == len(hard_domain_curriculum())
+    assert report.to_external_json()["solve_rate"] == 1.0
+
+
+def test_cli_exports_and_scores_hard_llm_baseline(tmp_path) -> None:
+    tasks = tmp_path / "hard-tasks.jsonl"
+    subprocess.run(  # noqa: S603
+        [sys.executable, "-m", "vpm", "export-hard-llm-baseline", str(tasks)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert tasks.exists()
+
+    predictions = tmp_path / "hard-predictions.jsonl"
+    scored = tmp_path / "hard-llm-baseline.json"
+    predictions.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "task_id": task.task_id,
+                    "answer": task.expected,
+                    "compute_units": 1.0,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+            for task in hard_domain_curriculum()
+        )
+    )
+    completed = subprocess.run(  # noqa: S603
+        [
+            sys.executable,
+            "-m",
+            "vpm",
+            "score-hard-llm-baseline",
+            str(predictions),
             "--output",
             str(scored),
             "--json",

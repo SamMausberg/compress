@@ -24,7 +24,9 @@ from vpm.evaluation.external_components import evaluate_external_components
 from vpm.evaluation.failure_modes import evaluate_failure_modes
 from vpm.evaluation.hard_domains import evaluate_hard_domains
 from vpm.evaluation.llm_baseline import (
+    score_hard_llm_baseline_predictions,
     score_llm_baseline_predictions,
+    write_hard_llm_baseline_tasks,
     write_llm_baseline_tasks,
 )
 from vpm.evaluation.open_domain import evaluate_open_domain_ambiguity
@@ -41,6 +43,16 @@ LLM_BASELINE_SCORE_OUTPUT = typer.Option(
     None,
     "--output",
     help="Optional JSON file to write for VPM_LLM_BASELINE_JSON.",
+)
+HARD_LLM_BASELINE_TASK_OUTPUT = typer.Argument(..., help="JSONL hard-domain task file to write.")
+HARD_LLM_BASELINE_PREDICTIONS = typer.Argument(
+    ...,
+    help="JSONL hard-domain prediction file to score.",
+)
+HARD_LLM_BASELINE_SCORE_OUTPUT = typer.Option(
+    None,
+    "--output",
+    help="Optional hard-domain LLM baseline JSON file to write.",
 )
 
 
@@ -285,6 +297,7 @@ def register_red_team_eval_commands(app: typer.Typer) -> None:
 def register_audit_eval_commands(app: typer.Typer) -> None:
     """Register baseline, phase, hard-domain, and compute audit commands."""
     register_llm_baseline_eval_commands(app)
+    register_hard_llm_baseline_eval_commands(app)
 
     @app.command("eval-baselines")
     def eval_baselines_command(
@@ -378,6 +391,40 @@ def register_llm_baseline_eval_commands(app: typer.Typer) -> None:
                 raise typer.BadParameter(
                     "refusing to write VPM_LLM_BASELINE_JSON for invalid score"
                 )
+            output.write_text(json.dumps(report.to_external_json(), indent=2, sort_keys=True))
+        if as_json:
+            typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            typer.echo(
+                f"status={report.status.value} "
+                f"solve_rate={report.solve_rate:.3f} "
+                f"compute_units={report.compute_units:.3f} "
+                f"max_compute_units={report.max_compute_units:.3f}"
+            )
+
+
+def register_hard_llm_baseline_eval_commands(app: typer.Typer) -> None:
+    """Register hard-domain external LLM baseline commands."""
+
+    @app.command("export-hard-llm-baseline")
+    def export_hard_llm_baseline_command(
+        output: Path = HARD_LLM_BASELINE_TASK_OUTPUT,
+    ) -> None:
+        """Export held-out hard-domain prompts for an external LLM baseline."""
+        tasks = write_hard_llm_baseline_tasks(output)
+        typer.echo(f"wrote={tasks} path={output}")
+
+    @app.command("score-hard-llm-baseline")
+    def score_hard_llm_baseline_command(
+        predictions: Path = HARD_LLM_BASELINE_PREDICTIONS,
+        output: Path | None = HARD_LLM_BASELINE_SCORE_OUTPUT,
+        as_json: bool = typer.Option(False, "--json", help="Print metrics as JSON."),
+    ) -> None:
+        """Score hard-domain external LLM answer predictions."""
+        report = score_hard_llm_baseline_predictions(predictions)
+        if output is not None:
+            if report.status is not BaselineStatus.EXECUTED:
+                raise typer.BadParameter("refusing to write invalid hard-domain LLM score")
             output.write_text(json.dumps(report.to_external_json(), indent=2, sort_keys=True))
         if as_json:
             typer.echo(json.dumps(report.to_dict(), indent=2, sort_keys=True))

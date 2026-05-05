@@ -166,6 +166,11 @@ certified utility positive; all Criterion 1 failure clauses unfired.
   llm-baseline.json`. The prediction JSONL must provide `task_id`,
   `operation`, and `compute_units` per task; the exported prompts do not
   include gold operations.
+- For held-out hard domains, use `vpm export-hard-llm-baseline
+  hard-tasks.jsonl`, then `vpm score-hard-llm-baseline
+  hard-predictions.jsonl --output hard-llm-baseline.json`. The hard-domain
+  prediction JSONL must provide `task_id`, `answer`, and `compute_units`;
+  exported prompts include evidence but not gold answers.
 
 ## Known risks
 
