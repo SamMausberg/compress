@@ -29,7 +29,7 @@ jobs:
           set -o pipefail
           cargo update --dry-run --workspace 2>&1 | tee cargo-drift.txt
       - name: Upload report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cargo-drift
           path: cargo-drift.txt
@@ -49,7 +49,7 @@ jobs:
       - name: uv lock --upgrade --dry-run
         run: uv lock --upgrade --dry-run 2>&1 | tee -a uv-drift.txt || true
       - name: Upload report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: uv-drift
           path: uv-drift.txt
