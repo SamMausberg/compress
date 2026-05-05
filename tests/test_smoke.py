@@ -24,11 +24,14 @@ def test_native_boundary() -> None:
 def test_diagnostics_report_install_runtime() -> None:
     report = collect_diagnostics()
     assert report.torch
-    assert report.torch_cuda is not None
     assert report.native_extension_ok is True
     if report.cuda_available:
+        assert report.torch_cuda is not None
         assert report.cuda_device
         assert report.cuda_probe_ok is True
+    else:
+        assert report.cuda_device is None
+        assert report.cuda_probe_ok is False
 
 
 def test_public_vertical_slice() -> None:

@@ -39,7 +39,7 @@ serde_json = "1"
 # bincode 2.x was flagged unmaintained (RUSTSEC-2025-0141) and 3.0 ships a
 # `compile_error!` poison pill. We use postcard — same niche (serde-
 # compatible binary format), actively maintained, no_std-friendly.
-postcard = { version = "1", features = ["alloc"] }
+postcard = { version = "1", default-features = false, features = ["alloc"] }
 parking_lot = "0.12"
 dashmap = "6.1"
 smallvec = { version = "1", features = ["serde", "union"] }
