@@ -34,13 +34,13 @@ jobs:
             --output-path coverage-rust.lcov
           cargo llvm-cov report --html --output-dir target/llvm-cov-html
       - name: Upload Rust coverage HTML
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rust-coverage-html
           path: target/llvm-cov-html
           retention-days: 14
       - name: Upload Rust coverage (lcov)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rust-coverage-lcov
           path: coverage-rust.lcov
@@ -63,13 +63,13 @@ jobs:
         run: |
           uv run pytest -q --cov=vpm --cov-report=xml --cov-report=html
       - name: Upload Python coverage HTML
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-coverage-html
           path: htmlcov
           retention-days: 14
       - name: Upload Python coverage (xml)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-coverage-xml
           path: coverage.xml

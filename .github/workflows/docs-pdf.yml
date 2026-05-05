@@ -60,7 +60,7 @@ jobs:
             docs/glossary.md \
             docs/references.md
       - name: Upload PDF artefact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vpm-architecture-pdf
           path: dist/vpm-5.3-architecture.pdf
