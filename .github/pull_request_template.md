@@ -23,8 +23,7 @@ or modifying.
 - [ ] `uv run pyright python`
 - [ ] `uv run pytest -q`
 - [ ] If this PR touches the spec semantics: relevant
-      `docs/architecture/` page updated and the verbatim wording from
-      `vpm_architecture_v5_3_improved.pdf` is preserved.
+      `docs/architecture/` page updated.
 - [ ] If this PR adds or modifies a verifier / retriever / capsule:
       property tests under `tests/integration/sanity/` and (where
       applicable) a failure-mode entry under

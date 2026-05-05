@@ -1,6 +1,6 @@
 # References
 
-The fourteen works cited in `vpm_architecture_v5_3_improved.pdf`.
+The fourteen works cited in the VPM architecture specification.
 
 1. Ashish Vaswani et al. *Attention Is All You Need.* NeurIPS, 2017.
    <https://arxiv.org/abs/1706.03762>

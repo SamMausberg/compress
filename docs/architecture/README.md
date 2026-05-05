@@ -1,12 +1,8 @@
 # VPM-5.3 Architecture
 
-This directory holds a faithful transcription of
-`vpm_architecture_v5_3_improved.pdf` (architecture draft, May 2026), broken into
-one markdown file per top-level section so that each implementation module can
-quote the spec it is realising.
-
-> **Source of truth.** When this transcription disagrees with the PDF, the PDF
-> wins. Fix the markdown.
+This directory holds the architecture draft, broken into one markdown file per
+top-level section so that each implementation module can quote the spec it is
+realising.
 
 ## Sections
 
@@ -27,11 +23,11 @@ quote the spec it is realising.
 
 ## Style conventions
 
-- **Verbatim prose.** Every definition, proposition, theorem, proof, invariant,
-  and criterion is reproduced exactly as in the PDF.
+- **Spec prose.** Every definition, proposition, theorem, proof, invariant,
+  and criterion is kept in the canonical markdown spec.
 - **Equations** are preserved as LaTeX inside `$$…$$` (display) or `$…$`
   (inline). Equation numbers are kept in the form `(n)` matching the PDF.
-- **Section headings** follow the PDF.
+- **Section headings** follow the architecture spec.
 - Each section ends with an **Implementation pointers** block (added, not part
   of the original document) listing the Rust crate(s) and Python module(s) that
   realise that section. This is the only material added to the original spec
