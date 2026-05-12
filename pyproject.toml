@@ -37,16 +37,16 @@ dependencies = [
   "numpy>=2.4",
   "scipy>=1.17",
   "einops>=0.8",
-  "pydantic>=2.13",
+  "pydantic>=2.13.4",
   "rich>=15.0",
   "typer>=0.25",
   "networkx>=3.6",
 ]
 
 [project.optional-dependencies]
-ssm = ["mamba-ssm>=2.3"]
+ssm = ["mamba-ssm>=2.3.2.post1"]
 viz = ["matplotlib>=3.10", "plotly>=6.7"]
-retrieve = ["faiss-cpu>=1.13", "sentence-transformers>=5.4"]
+retrieve = ["faiss-cpu>=1.13", "sentence-transformers>=5.5.0"]
 all = [
   "vpm[ssm]",
   "vpm[viz]",
@@ -93,10 +93,10 @@ dev = [
   "pytest>=9.0",
   "pytest-cov>=7.0",
   "pytest-benchmark>=5.2",
-  "hypothesis>=6.140",
+  "hypothesis>=6.152.6",
   "pre-commit>=4.6",
   "maturin>=1.13",
-  "typos>=1.46",
+  "typos>=1.46.1",
   "pip-audit>=2.9",
   "deptry>=0.20",
 ]
